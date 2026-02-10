@@ -1,10 +1,12 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/hooks/use-auth";
 
 export function AppHeader() {
   const { theme, toggle } = useTheme();
+  const { signOut } = useAuth();
 
   return (
     <header className="flex h-12 items-center gap-2 border-b border-border px-4 shrink-0">
@@ -13,6 +15,10 @@ export function AppHeader() {
       <Button variant="ghost" size="icon" onClick={toggle} className="h-8 w-8">
         {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         <span className="sr-only">Toggle theme</span>
+      </Button>
+      <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8">
+        <LogOut className="h-4 w-4" />
+        <span className="sr-only">Sair</span>
       </Button>
     </header>
   );

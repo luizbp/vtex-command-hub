@@ -1,19 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TagInput } from "@/components/TagInput";
 import { manageRelease, type ReleaseAccountStatus } from "@/utils/cliService";
 import { cn } from "@/lib/utils";
-
-function parseList(text: string): string[] {
-  return text
-    .split(/[,\n]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 const statusColors: Record<ReleaseAccountStatus["status"], string> = {
   pending: "bg-muted text-muted-foreground",
@@ -30,22 +23,19 @@ const statusLabels: Record<ReleaseAccountStatus["status"], string> = {
 };
 
 export default function ReleaseManager() {
-  const [accountsText, setAccountsText] = useState("");
+  const [accounts, setAccounts] = useState<string[]>([]);
   const [workspace, setWorkspace] = useState("");
-  const [installText, setInstallText] = useState("");
-  const [uninstallText, setUninstallText] = useState("");
+  const [installApps, setInstallApps] = useState<string[]>([]);
+  const [uninstallApps, setUninstallApps] = useState<string[]>([]);
   const [forceMaster, setForceMaster] = useState(false);
   const [stopOnError, setStopOnError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statuses, setStatuses] = useState<Record<string, ReleaseAccountStatus>>({});
 
-  const accounts = parseList(accountsText);
-
   const handleRun = async () => {
     if (!accounts.length || !workspace.trim()) return;
     setLoading(true);
 
-    // init all as pending
     const initial: Record<string, ReleaseAccountStatus> = {};
     accounts.forEach((a) => (initial[a] = { account: a, status: "pending", logs: [] }));
     setStatuses(initial);
@@ -54,8 +44,8 @@ export default function ReleaseManager() {
       {
         accounts,
         workspace: workspace.trim(),
-        appsToInstall: parseList(installText),
-        appsToUninstall: parseList(uninstallText),
+        appsToInstall: installApps,
+        appsToUninstall: uninstallApps,
         forceMaster,
         stopOnError,
       },
@@ -75,15 +65,12 @@ export default function ReleaseManager() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Accounts</label>
-          <Textarea
-            placeholder={"account1\naccount2"}
-            rows={4}
-            value={accountsText}
-            onChange={(e) => setAccountsText(e.target.value)}
-          />
-        </div>
+        <TagInput
+          label="Accounts"
+          values={accounts}
+          onChange={setAccounts}
+          placeholder="Digite uma account e pressione Enter"
+        />
         <div className="space-y-2">
           <label className="text-sm font-medium">Nome da Workspace</label>
           <Input
@@ -92,24 +79,18 @@ export default function ReleaseManager() {
             onChange={(e) => setWorkspace(e.target.value)}
           />
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Apps para Instalar (opcional)</label>
-          <Textarea
-            placeholder={"vtex.app-one\nvtex.app-two"}
-            rows={3}
-            value={installText}
-            onChange={(e) => setInstallText(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Apps para Desinstalar (opcional)</label>
-          <Textarea
-            placeholder={"vtex.old-app"}
-            rows={3}
-            value={uninstallText}
-            onChange={(e) => setUninstallText(e.target.value)}
-          />
-        </div>
+        <TagInput
+          label="Apps para Instalar (opcional)"
+          values={installApps}
+          onChange={setInstallApps}
+          placeholder="Ex: vtex.app-one"
+        />
+        <TagInput
+          label="Apps para Desinstalar (opcional)"
+          values={uninstallApps}
+          onChange={setUninstallApps}
+          placeholder="Ex: vtex.old-app"
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-6">

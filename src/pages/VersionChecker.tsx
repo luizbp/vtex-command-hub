@@ -1,28 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TagInput } from "@/components/TagInput";
 import { checkVersions, type VersionResult } from "@/utils/cliService";
 
-function parseList(text: string): string[] {
-  return text
-    .split(/[,\n]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 export default function VersionChecker() {
-  const [accountsText, setAccountsText] = useState("");
-  const [appsText, setAppsText] = useState("");
+  const [accounts, setAccounts] = useState<string[]>([]);
+  const [apps, setApps] = useState<string[]>([]);
   const [results, setResults] = useState<VersionResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-
-  const accounts = parseList(accountsText);
-  const apps = parseList(appsText);
 
   const handleCheck = async () => {
     if (!accounts.length || !apps.length) return;
@@ -46,24 +36,18 @@ export default function VersionChecker() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Accounts (uma por linha ou separadas por vírgula)</label>
-          <Textarea
-            placeholder={"account1\naccount2\naccount3"}
-            rows={5}
-            value={accountsText}
-            onChange={(e) => setAccountsText(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Apps</label>
-          <Textarea
-            placeholder={"vtex.store-graphql\nvtex.my-app"}
-            rows={5}
-            value={appsText}
-            onChange={(e) => setAppsText(e.target.value)}
-          />
-        </div>
+        <TagInput
+          label="Accounts"
+          values={accounts}
+          onChange={setAccounts}
+          placeholder="Digite uma account e pressione Enter"
+        />
+        <TagInput
+          label="Apps"
+          values={apps}
+          onChange={setApps}
+          placeholder="Ex: vtex.store-graphql"
+        />
       </div>
 
       <div className="flex items-center gap-4">

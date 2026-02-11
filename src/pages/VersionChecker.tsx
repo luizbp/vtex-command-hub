@@ -12,14 +12,14 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TagInput } from "@/components/TagInput";
-import { checkVersions, type VersionResult } from "@/utils/cliService";
+import { AppVersions, transformVersions } from "@/lib/utils";
 
 // Add a declaration for the electronAPI property on window
 
 export default function VersionChecker() {
   const [accounts, setAccounts] = useState<string[]>([]);
   const [apps, setApps] = useState<string[]>([]);
-  const [results, setResults] = useState<VersionResult[]>([]);
+  const [results, setResults] = useState<AppVersions[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -39,8 +39,9 @@ export default function VersionChecker() {
       setProgress(Math.round(((done + 1) / accounts.length) * 100));
     }
 
-    console.log("TCL: handleCheck -> data", data);
-    setResults(data);
+    const transformedData = transformVersions(data);
+
+    setResults(transformedData);
     setLoading(false);
   };
 
@@ -90,26 +91,26 @@ export default function VersionChecker() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="sticky left-0 bg-card z-10">
-                    Account
+                    Apps
                   </TableHead>
-                  {apps.map((app) => (
-                    <TableHead key={app} className="whitespace-nowrap">
-                      {app}
+                  {accounts.map((account) => (
+                    <TableHead key={account} className="whitespace-nowrap">
+                      {account}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {results.map((r) => (
-                  <TableRow key={r.account}>
+                  <TableRow key={r.app}>
                     <TableCell className="sticky left-0 bg-card z-10 font-medium">
-                      {r.account}
+                      {r.app}
                     </TableCell>
-                    {apps.map((app) => (
-                      <TableCell key={app}>
-                        {r.versions[app] ? (
+                    {accounts.map((account) => (
+                      <TableCell key={account} className="whitespace-nowrap">
+                        {r.accountVersions[account] ? (
                           <span className="font-mono text-sm">
-                            {r.versions[app]}
+                            {r.accountVersions[account]}
                           </span>
                         ) : (
                           <Badge variant="secondary">Não instalado</Badge>

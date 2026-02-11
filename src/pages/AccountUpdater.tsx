@@ -19,16 +19,18 @@ export default function AccountUpdater() {
   }, [logs]);
 
   const doneCount = logs.filter((l) => l.status !== "info").length;
-  const progress = accounts.length > 0 ? Math.round((doneCount / accounts.length) * 100) : 0;
+  const progress =
+    accounts.length > 0 ? Math.round((doneCount / accounts.length) * 100) : 0;
 
   const handleUpdate = async () => {
     if (!accounts.length) return;
     setLogs([]);
     setLoading(true);
 
-    await updateAccounts(accounts, (log) => {
-      setLogs((prev) => [...prev, log]);
-    });
+    for (const account of accounts) {
+      const response = await window.electronAPI?.updateAccount(account);
+      setLogs((prev) => [...prev, response]);
+    }
 
     setLoading(false);
   };
@@ -36,8 +38,16 @@ export default function AccountUpdater() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Atualizador de Contas</h1>
-        <p className="text-muted-foreground mt-1">Execute <code className="text-xs bg-muted px-1 py-0.5 rounded">yes | vtex update</code> em massa</p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Atualizador de Contas
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Execute{" "}
+          <code className="text-xs bg-muted px-1 py-0.5 rounded">
+            vtex switch {"{account}"} && yes | vtex update
+          </code>{" "}
+          em massa
+        </p>
       </div>
 
       <TagInput
@@ -70,10 +80,10 @@ export default function AccountUpdater() {
                   className={cn(
                     log.status === "success" && "text-green-500",
                     log.status === "error" && "text-destructive",
-                    log.status === "info" && "text-muted-foreground"
+                    log.status === "info" && "text-muted-foreground",
                   )}
                 >
-                  {log.message}
+                  <b>{log.account}</b>: {log.message}
                 </div>
               ))}
             </div>

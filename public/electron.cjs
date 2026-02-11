@@ -40,8 +40,14 @@ function createWindow() {
 
 app.whenReady().then(() => {
   const { win } = createWindow();
-  ipcMain.handle("versionChecker", async (event, ...args) =>
+  ipcMain.handle("versionChecker", async (_, ...args) =>
     cmdScripts.versionChecker(...args),
+  );
+  ipcMain.handle("updateAccount", async (_, ...args) =>
+    cmdScripts.updateAccount(...args),
+  );
+  ipcMain.handle("manageRelease", async (_, ...args) =>
+    cmdScripts.manageRelease(...args),
   );
   ipcMain.on("reload-page", () => {
     win.reload();

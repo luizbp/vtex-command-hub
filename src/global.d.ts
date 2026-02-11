@@ -10,6 +10,15 @@ declare global {
         account: string;
         apps: string[];
       }) => Promise<string>;
+      updateAccount: (account: string) => Promise<UpdateLog>;
+      manageRelease: (options: {
+        account: string;
+        workspace: string;
+        appsToInstall: string[];
+        appsToUninstall: string[];
+        forceMaster: boolean;
+        stopOnError: boolean;
+      }) => Promise<ReleaseAccountStatus>;
     };
   }
 }

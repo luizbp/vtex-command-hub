@@ -143,9 +143,14 @@ async function manageRelease(options) {
     if (!forceMaster) {
       try {
         const { stdout: whoamiOut } = await execPromise("vtex whoami");
-        const wsMatch = whoamiOut.match(/workspace\s+(\w+)/i);
-        const currentWs = wsMatch ? wsMatch[1] : null;
-        if (currentWs && currentWs.toLowerCase() === "master") {
+        const { stdout: workspaceStatusOut } = await execPromise(
+          "vtex workspace status",
+        );
+        if (
+          (workspaceStatusOut &&
+            workspaceStatusOut.toLowerCase().includes("master")) ||
+          (whoamiOut && whoamiOut.toLowerCase().includes("master"))
+        ) {
           state.status = "error";
           state.logs.push(
             "ERRO: Não é permitido instalar/desinstalar apps na workspace master.",

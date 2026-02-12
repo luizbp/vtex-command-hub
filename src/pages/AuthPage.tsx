@@ -4,7 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Terminal } from "lucide-react";
 
@@ -40,7 +46,10 @@ function AuthForm() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) throw error;
       } else {
         const { error } = await supabase.auth.signUp({
@@ -57,7 +66,7 @@ function AuthForm() {
           description: "Verifique seu email para confirmar o cadastro.",
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Erro",
         description: err.message,

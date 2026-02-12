@@ -8,23 +8,36 @@ interface TagInputProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   label?: string;
+  suggestions?: string[];
 }
 
-export function TagInput({ values, onChange, placeholder, label }: TagInputProps) {
+export function TagInput({
+  values,
+  onChange,
+  placeholder,
+  label,
+  suggestions = [],
+}: TagInputProps) {
   const [input, setInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const addTag = () => {
-    const trimmed = input.trim();
+  const addTag = (tag?: string) => {
+    const trimmed = (tag ?? input).trim();
     if (trimmed && !values.includes(trimmed)) {
       onChange([...values, trimmed]);
     }
     setInput("");
+    setShowSuggestions(false);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      addTag();
+      if (filteredSuggestions.length > 0 && showSuggestions) {
+        addTag(filteredSuggestions[0]);
+      } else {
+        addTag();
+      }
     }
     if (e.key === "Backspace" && !input && values.length > 0) {
       onChange(values.slice(0, -1));
@@ -35,10 +48,17 @@ export function TagInput({ values, onChange, placeholder, label }: TagInputProps
     onChange(values.filter((_, i) => i !== index));
   };
 
+  const filteredSuggestions = suggestions
+    .filter(
+      (s) =>
+        s.toLowerCase().includes(input.toLowerCase()) && !values.includes(s),
+    )
+    .slice(0, 5);
+
   return (
     <div className="space-y-2">
       {label && <label className="text-sm font-medium">{label}</label>}
-      <div className="flex flex-wrap gap-1.5 rounded-md border border-input bg-background p-2 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background">
+      <div className="flex flex-wrap gap-1.5 rounded-md border border-input bg-background p-2 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background relative">
         {values.map((tag, i) => (
           <Badge key={i} variant="secondary" className="gap-1 pr-1">
             {tag}
@@ -51,14 +71,34 @@ export function TagInput({ values, onChange, placeholder, label }: TagInputProps
             </button>
           </Badge>
         ))}
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={addTag}
-          placeholder={values.length === 0 ? placeholder : ""}
-          className="h-7 min-w-[120px] flex-1 border-0 p-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-        />
+        <div className="relative flex-1 min-w-[120px]">
+          <Input
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onKeyDown={handleKeyDown}
+            onBlur={() => setTimeout(() => addTag(), 100)}
+            placeholder={values.length === 0 ? placeholder : ""}
+            className="h-7 flex-1 border-0 p-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            autoComplete="off"
+            onFocus={() => setShowSuggestions(true)}
+          />
+          {showSuggestions && filteredSuggestions.length > 0 && (
+            <ul className="absolute z-10 left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-auto text-sm">
+              {filteredSuggestions.map((s, idx) => (
+                <li
+                  key={s}
+                  className="px-2 py-1 cursor-pointer hover:bg-muted"
+                  onMouseDown={() => addTag(s)}
+                >
+                  {s}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

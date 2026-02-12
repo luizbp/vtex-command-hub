@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TagInput } from "@/components/TagInput";
 import { AppVersions, transformVersions } from "@/lib/utils";
+import { useSettings } from "@/hooks/use-settings";
 
 // Add a declaration for the electronAPI property on window
 
@@ -22,6 +23,7 @@ export default function VersionChecker() {
   const [results, setResults] = useState<AppVersions[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const { getSettings } = useSettings();
 
   const handleCheck = async () => {
     if (!accounts.length || !apps.length) return;
@@ -62,12 +64,14 @@ export default function VersionChecker() {
           values={accounts}
           onChange={setAccounts}
           placeholder="Digite uma account e pressione Enter"
+          suggestions={getSettings().accounts}
         />
         <TagInput
           label="Apps"
           values={apps}
           onChange={setApps}
           placeholder="Ex: vtex.store-graphql"
+          suggestions={getSettings().apps}
         />
       </div>
 

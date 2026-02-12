@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TagInput } from "@/components/TagInput";
 import { updateAccounts, type UpdateLog } from "@/utils/cliService";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/hooks/use-settings";
 
 export default function AccountUpdater() {
   const [accounts, setAccounts] = useState<string[]>([]);
   const [logs, setLogs] = useState<UpdateLog[]>([]);
   const [loading, setLoading] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+  const { getSettings } = useSettings();
 
   useEffect(() => {
     if (logRef.current) {
@@ -55,6 +57,7 @@ export default function AccountUpdater() {
         values={accounts}
         onChange={setAccounts}
         placeholder="Digite uma account e pressione Enter"
+        suggestions={getSettings().accounts}
       />
 
       <div className="flex items-center gap-4">

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { TagInput } from "@/components/TagInput";
 import type { ReleaseAccountStatus } from "@/utils/cliService";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/hooks/use-settings";
 
 const statusColors: Record<ReleaseAccountStatus["status"], string> = {
   pending: "bg-muted text-muted-foreground",
@@ -33,6 +34,7 @@ export default function ReleaseManager() {
   const [statuses, setStatuses] = useState<
     Record<string, ReleaseAccountStatus>
   >({});
+  const { getSettings } = useSettings();
 
   const handleRun = async () => {
     if (!accounts.length || !workspace.trim()) return;
@@ -81,6 +83,7 @@ export default function ReleaseManager() {
           values={accounts}
           onChange={setAccounts}
           placeholder="Digite uma account e pressione Enter"
+          suggestions={getSettings().accounts}
         />
         <div className="space-y-2">
           <label className="text-sm font-medium">Nome da Workspace</label>

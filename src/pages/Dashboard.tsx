@@ -1,21 +1,43 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, RefreshCw, Rocket, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSettings } from "@/hooks/use-settings";
+import { PastExecutionViewer } from "@/components/PastExecutionViewer";
 
 const shortcuts = [
-  { title: "Verificador de Versões", icon: Search, url: "/version-checker", desc: "Checar versões de apps em múltiplas contas" },
-  { title: "Atualizador de Contas", icon: RefreshCw, url: "/account-updater", desc: "Rodar vtex update em massa" },
-  { title: "Gerenciador de Release/TM", icon: Rocket, url: "/release-manager", desc: "Montar workspaces com apps" },
+  {
+    title: "Verificador de Versões",
+    icon: Search,
+    url: "/version-checker",
+    desc: "Checar versões de apps em múltiplas contas",
+  },
+  {
+    title: "Atualizador de Contas",
+    icon: RefreshCw,
+    url: "/account-updater",
+    desc: "Rodar vtex update em massa",
+  },
+  {
+    title: "Gerenciador de Release/TM",
+    icon: Rocket,
+    url: "/release-manager",
+    desc: "Montar workspaces com apps",
+  },
 ];
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { getSettings } = useSettings();
+  const { logs = [] } = getSettings();
+  const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Visão geral do VTEX CLI Manager</p>
+        <p className="text-muted-foreground mt-1">
+          Visão geral do VTEX CLI Manager
+        </p>
       </div>
 
       {/* Stats */}
@@ -28,7 +50,9 @@ export default function Dashboard() {
         ].map((s) => (
           <Card key={s.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {s.label}
+              </CardTitle>
               <s.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -37,6 +61,16 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Última verificação de versões registrada (se houver) */}
+      {lastLog && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">
+            Última verificação de versões registrada
+          </h2>
+          <PastExecutionViewer log={lastLog} />
+        </div>
+      )}
 
       {/* Shortcuts */}
       <div>

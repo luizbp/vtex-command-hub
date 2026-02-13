@@ -13,6 +13,7 @@ export default function AccountUpdater() {
   const [loading, setLoading] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const { getSettings } = useSettings();
+  const { accounts: savedAccounts } = getSettings();
 
   useEffect(() => {
     if (logRef.current) {
@@ -56,8 +57,8 @@ export default function AccountUpdater() {
         label="Accounts"
         values={accounts}
         onChange={setAccounts}
-        placeholder="Digite uma account e pressione Enter"
-        suggestions={getSettings().accounts}
+        placeholder={`Digite ${savedAccounts.length ? "ou selecione " : ""}uma account e pressione Enter`}
+        suggestions={savedAccounts}
       />
 
       <div className="flex items-center gap-4">

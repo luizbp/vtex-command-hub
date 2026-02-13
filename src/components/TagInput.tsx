@@ -9,6 +9,8 @@ interface TagInputProps {
   placeholder?: string;
   label?: string;
   suggestions?: string[];
+  fillOnSelect?: boolean;
+  suffixWhenFilling?: string;
 }
 
 export function TagInput({
@@ -17,6 +19,8 @@ export function TagInput({
   placeholder,
   label,
   suggestions = [],
+  fillOnSelect = false,
+  suffixWhenFilling = "",
 }: TagInputProps) {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -28,6 +32,10 @@ export function TagInput({
     }
     setInput("");
     setShowSuggestions(false);
+  };
+
+  const fillInput = (tag?: string) => {
+    setInput((tag ?? input) + suffixWhenFilling);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -46,6 +54,15 @@ export function TagInput({
 
   const removeTag = (index: number) => {
     onChange(values.filter((_, i) => i !== index));
+  };
+
+  const handleOnBlur = () => {
+    if (fillOnSelect) {
+      setTimeout(() => setShowSuggestions(false), 100);
+      return;
+    }
+
+    setTimeout(() => addTag(), 100);
   };
 
   const filteredSuggestions = suggestions
@@ -79,7 +96,7 @@ export function TagInput({
               setShowSuggestions(true);
             }}
             onKeyDown={handleKeyDown}
-            onBlur={() => setTimeout(() => addTag(), 100)}
+            onBlur={handleOnBlur}
             placeholder={values.length === 0 ? placeholder : ""}
             className="h-7 flex-1 border-0 p-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             autoComplete="off"
@@ -91,7 +108,7 @@ export function TagInput({
                 <li
                   key={s}
                   className="px-2 py-1 cursor-pointer hover:bg-muted"
-                  onMouseDown={() => addTag(s)}
+                  onMouseDown={() => (fillOnSelect ? fillInput(s) : addTag(s))}
                 >
                   {s}
                 </li>

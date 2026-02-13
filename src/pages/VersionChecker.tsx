@@ -24,6 +24,7 @@ export default function VersionChecker() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const { getSettings } = useSettings();
+  const { accounts: savedAccounts, apps: savedApps } = getSettings();
 
   const handleCheck = async () => {
     if (!accounts.length || !apps.length) return;
@@ -63,15 +64,15 @@ export default function VersionChecker() {
           label="Accounts"
           values={accounts}
           onChange={setAccounts}
-          placeholder="Digite uma account e pressione Enter"
-          suggestions={getSettings().accounts}
+          placeholder={`Digite ${savedAccounts.length ? "ou selecione " : ""}uma account e pressione Enter`}
+          suggestions={savedAccounts}
         />
         <TagInput
           label="Apps"
           values={apps}
           onChange={setApps}
-          placeholder="Ex: vtex.store-graphql"
-          suggestions={getSettings().apps}
+          placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.app-example`}
+          suggestions={savedApps}
         />
       </div>
 

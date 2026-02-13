@@ -107,6 +107,7 @@ async function updateAccount(account) {
  * @param {string[]} options.appsToUninstall - Apps a desinstalar.
  * @param {boolean} options.forceMaster - Permite uso da master.
  * @param {boolean} options.stopOnError - Para execução ao encontrar erro.
+ * @param {boolean} options.resetWorkspace - Reseta o workspace antes de instalar/desinstalar apps.
  * @returns {Promise<{account: string, status: string, logs: string[]}>}
  */
 async function manageRelease(options) {
@@ -117,6 +118,7 @@ async function manageRelease(options) {
     appsToUninstall = [],
     forceMaster = false,
     stopOnError = false,
+    resetWorkspace = false,
   } = options;
   const state = { account, status: "in_progress", logs: [] };
 
@@ -135,8 +137,12 @@ async function manageRelease(options) {
     await execPromise(`vtex switch ${account}`);
 
     // 2. Cria workspace
-    state.logs.push(`Criando workspace \"${workspace}\"...`);
-    await execPromise(`yes | vtex use ${workspace}`);
+    state.logs.push(
+      `Criando ${resetWorkspace ? "e resetando a" : ""} workspace \"${workspace}\"...`,
+    );
+    await execPromise(
+      `yes | vtex use ${workspace} ${resetWorkspace ? "-r" : ""}`,
+    );
     state.logs.push(`Workspace \"${workspace}\" criado com sucesso.`);
 
     // Checa se está na workspace master antes de instalar/desinstalar apps

@@ -30,11 +30,13 @@ export default function ReleaseManager() {
   const [uninstallApps, setUninstallApps] = useState<string[]>([]);
   const [forceMaster, setForceMaster] = useState(false);
   const [stopOnError, setStopOnError] = useState(false);
+  const [resetWorkspace, setResetWorkspace] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statuses, setStatuses] = useState<
     Record<string, ReleaseAccountStatus>
   >({});
   const { getSettings } = useSettings();
+  const { accounts: savedAccounts, apps: savedApps } = getSettings();
 
   const handleRun = async () => {
     if (!accounts.length || !workspace.trim()) return;
@@ -59,8 +61,13 @@ export default function ReleaseManager() {
         appsToUninstall: uninstallApps,
         forceMaster,
         stopOnError,
+        resetWorkspace,
       });
       setStatuses((prev) => ({ ...prev, [account]: result }));
+
+      if (stopOnError && result?.status === "error") {
+        break;
+      }
     }
 
     setLoading(false);
@@ -82,8 +89,8 @@ export default function ReleaseManager() {
           label="Accounts"
           values={accounts}
           onChange={setAccounts}
-          placeholder="Digite uma account e pressione Enter"
-          suggestions={getSettings().accounts}
+          placeholder={`Digite ${savedAccounts.length ? "ou selecione " : ""}uma account e pressione Enter`}
+          suggestions={savedAccounts}
         />
         <div className="space-y-2">
           <label className="text-sm font-medium">Nome da Workspace</label>
@@ -97,13 +104,19 @@ export default function ReleaseManager() {
           label="Apps para Instalar (opcional)"
           values={installApps}
           onChange={setInstallApps}
-          placeholder="Ex: vtex.app-one"
+          suggestions={savedApps}
+          fillOnSelect
+          suffixWhenFilling="@"
+          placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.new-app`}
         />
         <TagInput
           label="Apps para Desinstalar (opcional)"
           values={uninstallApps}
           onChange={setUninstallApps}
-          placeholder="Ex: vtex.old-app"
+          suggestions={savedApps}
+          fillOnSelect
+          suffixWhenFilling="@"
+          placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.old-app`}
         />
       </div>
 
@@ -121,6 +134,13 @@ export default function ReleaseManager() {
             onCheckedChange={(v) => setStopOnError(!!v)}
           />
           Parar em caso de erro
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={resetWorkspace}
+            onCheckedChange={(v) => setResetWorkspace(!!v)}
+          />
+          Resetar ws antes de instalar/desinstalar apps
         </label>
       </div>
 

@@ -31,6 +31,29 @@ export default function Dashboard() {
   const { logs = [] } = getSettings();
   const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
 
+  // Saudação baseada no horário
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+
+  const motivationalQuotes = [
+    "A cada novo dia, uma nova chance de recomeçar e confiar no propósito.",
+    "A esperança ilumina o caminho mesmo nos momentos de dúvida.",
+    "A força para superar vem de acreditar que há sempre um sentido maior.",
+    "A gratidão transforma pequenos passos em grandes conquistas.",
+    "A perseverança é guiada pela confiança de que tudo tem seu tempo.",
+    "A paz interior nasce quando entregamos nossos esforços a Deus.",
+    "A humildade abre portas para aprendizados e bênçãos inesperadas.",
+    "A alegria está em amar e servir ao próximo.",
+    "A serenidade nos ajuda a enfrentar desafios com coragem e esperança.",
+    "A luz da esperança nunca se apaga para quem segue com fé e amor.",
+  ];
+  const randomQuote =
+    motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+
   return (
     <div className="space-y-8">
       <div>
@@ -40,26 +63,10 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Contas Processadas", value: "—", icon: Activity },
-          { label: "Última Verificação", value: "Nenhuma", icon: Search },
-          { label: "Atualizações Hoje", value: "0", icon: RefreshCw },
-          { label: "Releases Criados", value: "0", icon: Rocket },
-        ].map((s) => (
-          <Card key={s.label}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {s.label}
-              </CardTitle>
-              <s.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{s.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Saudação e frase motivacional */}
+      <div className=" p-6 flex flex-col items-left gap-2">
+        <span className="text-xl font-semibold">{getGreeting()}!</span>
+        <span className="italic text-muted-foreground">{randomQuote}</span>
       </div>
 
       {/* Última verificação de versões registrada (se houver) */}

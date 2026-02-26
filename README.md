@@ -1,73 +1,120 @@
-# Welcome to your Lovable project
+# VTEX Command Hub 🚀
 
-## Project info
+![Electron](https://img.shields.io/badge/Electron-23.1.4-blue?logo=electron)
+![React](https://img.shields.io/badge/React-18.3.1-61dafb?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178c6?logo=typescript)
+![VTEX CLI](https://img.shields.io/badge/VTEX%20CLI-integrado-red?logo=vtex)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## Sobre o Projeto
 
-There are several ways of editing your application.
+O **VTEX Command Hub** é uma interface gráfica (GUI) moderna construída com Electron e ReactJS, projetada para abstrair e potencializar o uso da VTEX CLI e outras ferramentas de linha de comando. Seu objetivo é proporcionar controle total sobre operações comuns do ecossistema VTEX via frontend, além de oferecer automações que agilizam o workflow de desenvolvimento e gestão de múltiplas contas.
 
-**Use Lovable**
+> **Por que usar?**
+>
+> - Centraliza tarefas repetitivas e complexas da VTEX CLI em uma interface amigável.
+> - Reduz erros operacionais e acelera processos de deploy, atualização e monitoramento.
+> - Ideal para squads, agências e desenvolvedores que gerenciam múltiplas lojas VTEX.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## ✨ Funcionalidades
 
-**Use your preferred IDE**
+| Funcionalidade                | Descrição                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------ |
+| **Gestão de Workspaces**      | Crie, resete e gerencie workspaces em múltiplas contas de forma automatizada.              |
+| **Automação de Login/Update** | Execute `vtex switch` e `vtex update` em massa, atualizando várias contas simultaneamente. |
+| **Verificação de Versões**    | Consulte rapidamente as versões de apps instalados em diferentes contas.                   |
+| **Gerenciamento de Releases** | Instale/desinstale apps em lote, com controle de erros e logs detalhados.                  |
+| **Monitoramento de Logs**     | Histórico de execuções, com filtros por data, conta e app, e visualização detalhada.       |
+| **Sugestões Inteligentes**    | Inputs com autocomplete para contas e apps, baseados em configurações salvas.              |
+| **Configurações Exportáveis** | Importe/exporte presets de contas e apps para facilitar o setup em novos ambientes.        |
+| **Interface Responsiva**      | UI moderna, responsiva e com dark mode.                                                    |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Stack Tecnológica
 
-Follow these steps:
+- **Electron**: Proporciona integração nativa com o sistema operacional e acesso à VTEX CLI.
+- **ReactJS + TypeScript**: Interface reativa, tipada e de alta performance.
+- **TailwindCSS**: Estilização moderna e responsiva.
+- **VTEX CLI**: Toda automação é feita via comandos reais da VTEX CLI, garantindo compatibilidade total.
+- **Supabase**: (Opcional) Integração pronta para autenticação e armazenamento remoto, se desejado.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## ⚡ Pré-requisitos
 
-# Step 3: Install the necessary dependencies.
-npm i
+- [Node.js](https://nodejs.org/) (v18+ recomendado)
+- [Yarn](https://classic.yarnpkg.com/) ou [npm](https://www.npmjs.com/)
+- [VTEX CLI](https://developers.vtex.com/docs/vtex-io-documentation-vtex-io-cli-installation)
+- [Git](https://git-scm.com/)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+> **Dica:** Certifique-se de que a VTEX CLI está autenticada e funcional no terminal antes de usar o app.
+
+---
+
+## 🚀 Instalação e Setup
+
+```bash
+# 1. Clone o repositório
+$ git clone https://github.com/seu-usuario/vtex-command-hub.git
+$ cd vtex-command-hub
+
+# 2. Instale as dependências
+$ yarn install
+# ou
+$ npm install
+
+# 3. Rode em modo desenvolvimento
+$ yarn dev
+# ou
+$ npm run dev
+
+# 4. Inicie o Electron
+$ yarn electron
+# ou
+$ npm run electron
 ```
 
-**Edit a file directly in GitHub**
+> **Sugestão:** Use o [VS Code](https://code.visualstudio.com/) para melhor experiência de desenvolvimento.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 💻 Como Usar
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Abra o app** e navegue pelo menu lateral para acessar as principais funções:
+   - **Dashboard:** Visão geral, atalhos rápidos e últimas execuções.
+   - **Verificador de Versões:** Informe contas e apps para checar versões instaladas.
+   - **Atualizador de Contas:** Selecione múltiplas contas para rodar update em massa.
+   - **Gerenciador de Release:** Monte workspaces, instale/desinstale apps e acompanhe logs em tempo real.
+   - **Configurações:** Salve presets de contas/apps e exporte/import settings.
 
-## What technologies are used for this project?
+2. **Preencha os campos** com as contas e apps desejados (autocomplete disponível).
+3. **Execute as ações** e acompanhe o progresso e logs diretamente na interface.
+4. **Consulte o histórico** de execuções para auditoria e repetição de processos.
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🤝 Contribuição
 
-## How can I deploy this project?
+Contribuições são muito bem-vindas! Siga o fluxo abaixo para colaborar:
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- [ ] Faça um **fork** deste repositório
+- [ ] Crie uma **branch** para sua feature ou correção (`git checkout -b minha-feature`)
+- [ ] Commit suas alterações (`git commit -m 'feat: minha nova feature'`)
+- [ ] Faça o **push** para seu fork (`git push origin minha-feature`)
+- [ ] Abra um **Pull Request** detalhando sua contribuição
 
-## Can I connect a custom domain to my Lovable project?
+> **Dica:** Sempre mantenha sua branch atualizada com a `main` antes de abrir o PR.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📄 Licença
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](./LICENSE) para mais detalhes.
+
+---
+
+> Feito com ❤️ para o P1.

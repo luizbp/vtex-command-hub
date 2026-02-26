@@ -11,7 +11,7 @@ import VersionChecker from "@/pages/VersionChecker";
 import AccountUpdater from "@/pages/AccountUpdater";
 import ReleaseManager from "@/pages/ReleaseManager";
 import SettingsPage from "@/pages/SettingsPage";
-import AuthPage from "@/pages/AuthPage";
+// import AuthPage from "@/pages/AuthPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,13 +27,11 @@ function ProtectedRoutes() {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
+  // if (!user) {
+  //   return <Navigate to="/auth" replace />;
+  // }
 
-  return (
-    <AppLayout />
-  );
+  return <AppLayout />;
 }
 
 const App = () => (
@@ -45,7 +43,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/auth" element={<AuthPage />} />
+              {/* <Route path="/auth" element={<AuthPage />} /> */}
               <Route element={<ProtectedRoutes />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/version-checker" element={<VersionChecker />} />

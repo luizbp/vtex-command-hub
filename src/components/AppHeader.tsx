@@ -13,13 +13,17 @@ export function AppHeader() {
       <SidebarTrigger />
       <div className="flex-1" />
       <Button variant="ghost" size="icon" onClick={toggle} className="h-8 w-8">
-        {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        {theme === "dark" ? (
+          <Sun className="h-4 w-4" />
+        ) : (
+          <Moon className="h-4 w-4" />
+        )}
         <span className="sr-only">Toggle theme</span>
       </Button>
-      <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8">
+      {/* <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8">
         <LogOut className="h-4 w-4" />
         <span className="sr-only">Sair</span>
-      </Button>
+      </Button> */}
     </header>
   );
 }

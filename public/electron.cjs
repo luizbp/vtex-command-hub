@@ -9,8 +9,6 @@ const heigthWindowMode = 550;
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: widthWindowMode,
-    height: heigthWindowMode,
     minWidth: widthWindowMode,
     minHeight: heigthWindowMode,
     alwaysOnTop: false,
@@ -24,6 +22,8 @@ function createWindow() {
     },
     // icon: `${__dirname}/logo192.png`,
   });
+
+  win.maximize();
 
   win.setMenuBarVisibility(isDev);
 

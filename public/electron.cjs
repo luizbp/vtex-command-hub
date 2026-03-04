@@ -7,7 +7,7 @@ const {
 } = require("electron");
 const path = require("path");
 
-const isDev = require("electron-is-dev");
+const isDev = require("electron-is-dev")?.default || false;
 const cmdScripts = require("./utils/cmd-scripts.cjs");
 
 const widthWindowMode = 820;
@@ -42,7 +42,7 @@ function createWindow() {
   win.loadURL(
     isDev
       ? "http://localhost:8080/"
-      : `file://${path.join(__dirname, "../build/index.html")}`,
+      : `file://${path.join(__dirname, "../dist/index.html")}`,
   );
 
   win.on("ready-to-show", () => {

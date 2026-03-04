@@ -1,12 +1,23 @@
-const { app, BrowserWindow, ipcMain, globalShortcut } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  autoUpdater,
+  globalShortcut,
+} = require("electron");
 const path = require("path");
-require("update-electron-app")();
 
 const isDev = require("electron-is-dev");
 const cmdScripts = require("./utils/cmd-scripts.cjs");
 
 const widthWindowMode = 820;
 const heigthWindowMode = 550;
+
+if (!isDev) {
+  const server = "https://vtex-command-hub-hazel.vercel.app";
+  const feed = `${server}/update/${process.platform}/${app.getVersion()}`;
+  autoUpdater.setFeedURL({ url: feed });
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -33,6 +44,12 @@ function createWindow() {
       ? "http://localhost:8080/"
       : `file://${path.join(__dirname, "../build/index.html")}`,
   );
+
+  win.on("ready-to-show", () => {
+    if (!isDev) {
+      autoUpdater.checkForUpdates();
+    }
+  });
 
   return {
     win,

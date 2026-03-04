@@ -2,7 +2,7 @@
   "name": "vite_react_shadcn_ts",
   "private": true,
   "main": "public/electron.cjs",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,19 +13,32 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "electron": "electron .",
-    "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=build/electron.js",
-    "electron:package:mac": "yarn build && electron-builder -m -c.extraMetadata.main=build/electron.js",
-    "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=build/electron.js"
+    "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=dist/electron.cjs",
+    "electron:package:mac": "yarn build && electron-builder -m -c.extraMetadata.main=dist/electron.cjs",
+    "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=dist/electron.cjs"
   },
   "build": {
-    "appId": "worklogs.jira.electron",
-    "productName": "Worklogs Jira",
+    "appId": "vtex.command.hub",
+    "productName": "Vtex Command Hub",
     "files": [
-      "build/**/*",
+      "dist/**/*",
       "node_modules/**/*"
     ],
     "directories": {
-      "buildResources": "public"
+      "buildResources": "public",
+      "output": "dist"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "luizbp",
+        "repo": "vtex-command-hub"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
     }
   },
   "eslintConfig": {

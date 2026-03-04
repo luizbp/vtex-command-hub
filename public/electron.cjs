@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require("electron");
-const { autoUpdater } = require("electron-updater");
 const path = require("path");
+require("update-electron-app")();
 
 const isDev = require("electron-is-dev");
 const cmdScripts = require("./utils/cmd-scripts.cjs");
@@ -34,20 +34,10 @@ function createWindow() {
       : `file://${path.join(__dirname, "../build/index.html")}`,
   );
 
-  // Trigger do Auto-update
-  win.once("ready-to-show", () => {
-    autoUpdater.checkForUpdatesAndNotify();
-  });
-
   return {
     win,
   };
 }
-
-autoUpdater.on("update-downloaded", () => {
-  // Aqui você pode disparar um diálogo perguntando se quer reiniciar agora
-  autoUpdater.quitAndInstall();
-});
 
 app.whenReady().then(() => {
   const { win } = createWindow();

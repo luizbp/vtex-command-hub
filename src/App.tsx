@@ -17,20 +17,6 @@ import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoutes() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-muted-foreground">Carregando...</div>
-      </div>
-    );
-  }
-
-  // if (!user) {
-  //   return <Navigate to="/auth" replace />;
-  // }
-
   return <AppLayout />;
 }
 

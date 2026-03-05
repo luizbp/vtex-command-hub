@@ -17,6 +17,36 @@ if (!isDev) {
   const server = "https://vtex-command-hub-hazel.vercel.app";
   const feed = `${server}/update/${process.platform}/${app.getVersion()}`;
   autoUpdater.setFeedURL({ url: feed });
+
+  setInterval(() => {
+    autoUpdater.checkForUpdates();
+  }, 60000);
+
+  autoUpdater.on("update-downloaded", (event, releaseNotes, releaseName) => {
+    const dialogOpts = {
+      type: "info",
+      buttons: ["Reiniciar", "Mais Tarde"],
+      title: "Atualização Disponivel",
+      message: process.platform === "win32" ? releaseNotes : releaseName,
+      detail:
+        "Uma nova versão foi Baixada. Restart the application to apply the updates.",
+    };
+
+    dialog.showMessageBox(dialogOpts).then((returnValue) => {
+      if (returnValue.response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on("error", (message) => {
+    const dialogOpts = {
+      type: "error",
+      buttons: ["Ok"],
+      title: "Erro na Atualização",
+      message: "Ocorreu um erro ao tentar atualizar o aplicativo.",
+      detail: message,
+    };
+    dialog.showMessageBox(dialogOpts);
+  });
 }
 
 function createWindow() {
@@ -44,10 +74,6 @@ function createWindow() {
       ? "http://localhost:8080"
       : `file://${path.join(__dirname, "../dist/index.html")}`,
   );
-
-  if (!isDev) {
-    autoUpdater.checkForUpdates();
-  }
 
   return {
     win,

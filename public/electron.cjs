@@ -39,11 +39,7 @@ function createWindow() {
 
   win.setMenuBarVisibility(isDev);
 
-  win.loadURL(
-    isDev
-      ? "http://localhost:8080/"
-      : `file://${path.join(__dirname, "../dist/index.html")}`,
-  );
+  win.loadURL(`file://${path.join(__dirname, "../dist/index.html")}`);
 
   win.on("ready-to-show", () => {
     if (!isDev) {

@@ -4,6 +4,14 @@
   "main": "public/electron.cjs",
   "version": "0.1.6",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luizbp/vtex-command-hub"
+  },
+  "author": {
+    "name": "Luiz Carlos B Pereira",
+    "email": "luiz.bpereira@outlook.com"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

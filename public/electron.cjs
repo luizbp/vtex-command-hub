@@ -87,17 +87,13 @@ function createWindow() {
 
   win.maximize();
 
-  win.setMenuBarVisibility(isDev);
+  win.setMenuBarVisibility(true);
 
   win.loadURL(
     isDev
       ? "http://localhost:8080"
       : `file://${path.join(__dirname, "../dist/index.html")}`,
   );
-
-  // if (isDev) {
-  win.webContents.openDevTools();
-  // }
 
   return {
     win,

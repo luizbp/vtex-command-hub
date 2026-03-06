@@ -95,6 +95,10 @@ function createWindow() {
       : `file://${path.join(__dirname, "../dist/index.html")}`,
   );
 
+  // if (isDev) {
+  win.webContents.openDevTools();
+  // }
+
   return {
     win,
   };

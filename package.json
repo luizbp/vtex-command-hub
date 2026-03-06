@@ -41,7 +41,7 @@
       ]
     },
     "squirrelWindows": {
-      "iconUrl": "https://seuservidor.com/caminho/icone.ico"
+      "iconUrl": "https://raw.githubusercontent.com/luizbp/vtex-command-hub/refs/heads/main/public/logo192.ico"
     }
   },
   "eslintConfig": {

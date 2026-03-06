@@ -59,7 +59,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Visão geral do VTEX CLI Manager Teste de versão 0.1.0
+          Visão geral do VTEX CLI Manager
         </p>
       </div>
 

@@ -16,7 +16,9 @@ export function transformVersions(data: VersionResult[]): AppVersions[] {
   const appMap: Record<string, Record<string, string>> = {};
 
   // 2. Populamos o mapa iterando sobre cada conta
-  data.forEach(({ account, versions }) => {
+  data.forEach(({ account, versions, error }) => {
+    if (error) return;
+
     Object.entries(versions).forEach(([appName, version]) => {
       if (!appMap[appName]) {
         appMap[appName] = {};

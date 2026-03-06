@@ -1,3 +1,32 @@
+// Componente para exibir contas com erro
+function ErrorAccountsList({
+  errorAccounts,
+}: {
+  errorAccounts: { account: string; error: string }[];
+}) {
+  if (!errorAccounts?.length) return <></>;
+  return (
+    <>
+      <Card className="border-destructive border-2">
+        <CardHeader>
+          <CardTitle className="text-base text-destructive">
+            Contas com erro
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc pl-4 space-y-1">
+            {errorAccounts.map((item, idx) => (
+              <li key={item.account + idx}>
+                <span className="font-semibold">{item.account}:</span>{" "}
+                {item.error}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,10 +44,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PastExecutionViewer } from "@/components/PastExecutionViewer";
 import { TagInput } from "@/components/TagInput";
 import { AppVersions, transformVersions } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/use-settings";
 import { Input } from "@/components/ui/input";
 
 export default function VersionChecker() {
+  const { toast } = useToast();
   const execCardRef = useRef<HTMLDivElement | null>(null);
   const [accounts, setAccounts] = useState<string[]>([]);
   const [apps, setApps] = useState<string[]>([]);
@@ -39,6 +70,10 @@ export default function VersionChecker() {
   const [filterDate, setFilterDate] = useState("");
   const [filterApp, setFilterApp] = useState("");
   const [filterAccount, setFilterAccount] = useState("");
+  const [errorAccounts, setErrorAccounts] = useState<
+    { account: string; error: string }[]
+  >([]);
+  console.log("TCL: VersionChecker -> errorAccounts", errorAccounts);
 
   // Filtra logs conforme filtros
   const filteredLogs = useMemo(() => {
@@ -79,23 +114,50 @@ export default function VersionChecker() {
     setLoading(true);
     setResults([]);
     setProgress(0);
+    setErrorAccounts([]);
 
     const data = [];
+    const errors: { account: string; error: string }[] = [];
 
     for (let done = 0; done < accounts.length; done++) {
       const account = accounts[done];
-      data.push(
-        ...(await window.electronAPI.versionChecker({ account, apps })),
-      );
+      const result = await window.electronAPI.versionChecker({ account, apps });
+      for (const r of result) {
+        if (r.error) {
+          errors.push({ account, error: r.error });
+          toast({
+            title: `Erro ao verificar versões na conta ${account}`,
+            description: r.error,
+            variant: "destructive",
+          });
+        }
+      }
+      data.push(...result);
       setProgress(Math.round(((done + 1) / accounts.length) * 100));
     }
 
-    const transformedData = transformVersions(data);
+    setErrorAccounts(errors);
 
+    if (errors.length) {
+      toast({
+        title: "Verificação concluída com erros",
+        description: "Algumas contas apresentaram erros durante a verificação.",
+        variant: "destructive",
+      });
+      setLoading(false);
+
+      if (data.length === errors.length) return;
+    } else {
+      toast({
+        title: "Verificação concluída",
+        description: "Todas as contas foram verificadas com sucesso.",
+      });
+    }
+
+    const transformedData = transformVersions(data);
     setResults(transformedData);
     setLoading(false);
 
-    // Salva log da execução
     addLog({
       date: new Date().toISOString(),
       data: {
@@ -159,6 +221,9 @@ export default function VersionChecker() {
         </Button>
         {loading && <Progress value={progress} className="w-48" />}
       </div>
+
+      {/* Contas com erro */}
+      <ErrorAccountsList errorAccounts={errorAccounts} />
 
       {/* Resultado da execução atual */}
       {results.length > 0 && (

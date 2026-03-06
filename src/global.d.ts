@@ -9,7 +9,15 @@ declare global {
       }: {
         account: string;
         apps: string[];
-      }) => Promise<string>;
+      }) => Promise<
+        [
+          {
+            account: string;
+            versions?: string;
+            error?: string;
+          },
+        ]
+      >;
       updateAccount: (account: string) => Promise<UpdateLog>;
       manageRelease: (options: {
         account: string;

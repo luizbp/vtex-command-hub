@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TagInput } from "@/components/TagInput";
 import { updateAccounts, type UpdateLog } from "@/utils/cliService";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/use-settings";
 
 export default function AccountUpdater() {
+    const { toast } = useToast();
   const [accounts, setAccounts] = useState<string[]>([]);
   const [logs, setLogs] = useState<UpdateLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,6 +35,13 @@ export default function AccountUpdater() {
     for (const account of accounts) {
       const response = await window.electronAPI?.updateAccount(account);
       setLogs((prev) => [...prev, response]);
+      if (response && response.status === "error") {
+        toast({
+          title: `Erro ao atualizar conta ${account}`,
+          description: response.message || "Erro desconhecido",
+          variant: "destructive",
+        });
+      }
     }
 
     setLoading(false);

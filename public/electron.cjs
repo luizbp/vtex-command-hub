@@ -1,3 +1,4 @@
+if (require("electron-squirrel-startup")) return;
 const {
   app,
   BrowserWindow,
@@ -7,20 +8,9 @@ const {
   dialog,
 } = require("electron");
 const path = require("path");
+const { logToFile } = require("./utils/utils.cjs");
 
 const isDev = require("electron-is-dev")?.default || false;
-
-// Logger simples para arquivo
-const fs = require("fs");
-const logPath = path.join(app.getPath("userData"), "main.log");
-function logToFile(...args) {
-  const msg =
-    `[${new Date().toISOString()}] ` +
-    args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") +
-    "\n";
-  fs.appendFileSync(logPath, msg);
-}
-logToFile("TCL: isDev", isDev);
 const cmdScripts = require("./utils/cmd-scripts.cjs");
 
 const widthWindowMode = 820;
@@ -29,17 +19,17 @@ const heigthWindowMode = 550;
 if (!isDev) {
   const server = "https://vtex-command-hub-hazel.vercel.app";
   const feed = `${server}/update/${process.platform}/${app.getVersion()}`;
-  logToFile("[autoUpdater] Feed URL:", feed);
+
   try {
     autoUpdater.setFeedURL({ url: feed });
   } catch (e) {
-    logToFile("[autoUpdater] setFeedURL error:", e);
+    logToFile(app, "[autoUpdater] setFeedURL error:", e);
   }
 
   setInterval(() => {
-    logToFile("[autoUpdater] Checking for updates...");
+    logToFile(app, "[autoUpdater] Checking for updates...");
     autoUpdater.checkForUpdates();
-  }, 60000);
+  }, 60000 * 10); // Check every 10 minutes
 }
 
 function createWindow() {
@@ -69,16 +59,8 @@ function createWindow() {
   );
 
   if (!isDev) {
-    autoUpdater.on("update-available", (info) => {
-      logToFile("[autoUpdater] Update available:", info);
-    });
-
-    autoUpdater.on("update-not-available", (info) => {
-      logToFile("[autoUpdater] No update available:", info);
-    });
-
     autoUpdater.on("update-downloaded", (event, releaseNotes, releaseName) => {
-      logToFile("[autoUpdater] Update downloaded:", {
+      logToFile(app, "[autoUpdater] Update downloaded:", {
         releaseNotes,
         releaseName,
       });
@@ -105,7 +87,7 @@ function createWindow() {
       } else {
         errorMsg = String(err);
       }
-      logToFile("[autoUpdater] Error:", errorMsg);
+      logToFile(app, "[autoUpdater] Error:", errorMsg);
       const dialogOpts = {
         type: "error",
         buttons: ["Ok"],

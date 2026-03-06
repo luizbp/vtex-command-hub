@@ -1,9 +1,9 @@
 /**
  * CLI Service — Mock layer
- * 
+ *
  * Este arquivo centraliza todas as chamadas que, no futuro,
  * serão substituídas por chamadas reais ao Electron IPC (ipcRenderer.invoke).
- * 
+ *
  * Por enquanto, cada função simula delays e retorna dados fictícios.
  */
 
@@ -18,7 +18,8 @@ const randomBool = (chance = 0.8) => Math.random() < chance;
 // --- Types ---
 export interface VersionResult {
   account: string;
-  versions: Record<string, string | null>; // appName → version or null
+  versions?: Record<string, string | null>; // appName → version or null
+  error?: string;
 }
 
 export interface UpdateLog {
@@ -47,7 +48,7 @@ export interface ReleaseOptions {
 export async function checkVersions(
   accounts: string[],
   apps: string[],
-  onProgress?: (done: number, total: number) => void
+  onProgress?: (done: number, total: number) => void,
 ): Promise<VersionResult[]> {
   const results: VersionResult[] = [];
   const total = accounts.length;
@@ -69,16 +70,28 @@ export async function checkVersions(
 // Futuro: ipcRenderer.invoke('cli:updateAccount', account)
 export async function updateAccounts(
   accounts: string[],
-  onLog: (log: UpdateLog) => void
+  onLog: (log: UpdateLog) => void,
 ): Promise<void> {
   for (const account of accounts) {
-    onLog({ account, message: `[${account}] Iniciando atualização...`, status: "info" });
+    onLog({
+      account,
+      message: `[${account}] Iniciando atualização...`,
+      status: "info",
+    });
     await delay(500 + Math.random() * 1000);
 
     if (randomBool(0.9)) {
-      onLog({ account, message: `[${account}] yes | vtex update — Atualizado com sucesso ✓`, status: "success" });
+      onLog({
+        account,
+        message: `[${account}] yes | vtex update — Atualizado com sucesso ✓`,
+        status: "success",
+      });
     } else {
-      onLog({ account, message: `[${account}] Falha na atualização ✗`, status: "error" });
+      onLog({
+        account,
+        message: `[${account}] Falha na atualização ✗`,
+        status: "error",
+      });
     }
   }
 }
@@ -87,17 +100,30 @@ export async function updateAccounts(
 // Futuro: ipcRenderer.invoke('cli:manageRelease', options)
 export async function manageRelease(
   options: ReleaseOptions,
-  onStatusChange: (account: string, status: ReleaseAccountStatus) => void
+  onStatusChange: (account: string, status: ReleaseAccountStatus) => void,
 ): Promise<void> {
-  const { accounts, workspace, appsToInstall, appsToUninstall, forceMaster, stopOnError } = options;
+  const {
+    accounts,
+    workspace,
+    appsToInstall,
+    appsToUninstall,
+    forceMaster,
+    stopOnError,
+  } = options;
 
   for (const account of accounts) {
-    const state: ReleaseAccountStatus = { account, status: "in_progress", logs: [] };
+    const state: ReleaseAccountStatus = {
+      account,
+      status: "in_progress",
+      logs: [],
+    };
 
     // Validate master
     if (workspace.toLowerCase() === "master" && !forceMaster) {
       state.status = "error";
-      state.logs.push("ERRO: Proibido rodar na master. Ative 'Forçar uso na Master'.");
+      state.logs.push(
+        "ERRO: Proibido rodar na master. Ative 'Forçar uso na Master'.",
+      );
       onStatusChange(account, { ...state });
       if (stopOnError) return;
       continue;
@@ -106,7 +132,9 @@ export async function manageRelease(
     onStatusChange(account, { ...state });
 
     // Step 1: Create workspace
-    state.logs.push(`Criando Workspace "${workspace}" na conta "${account}"...`);
+    state.logs.push(
+      `Criando Workspace "${workspace}" na conta "${account}"...`,
+    );
     onStatusChange(account, { ...state });
     await delay(600 + Math.random() * 500);
     state.logs.push(`Workspace "${workspace}" criado com sucesso.`);

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { TagInput } from "@/components/TagInput";
 import type { ReleaseAccountStatus } from "@/utils/cliService";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/use-settings";
 
 const statusColors: Record<ReleaseAccountStatus["status"], string> = {
@@ -24,6 +25,7 @@ const statusLabels: Record<ReleaseAccountStatus["status"], string> = {
 };
 
 export default function ReleaseManager() {
+    const { toast } = useToast();
   const [accounts, setAccounts] = useState<string[]>([]);
   const [workspace, setWorkspace] = useState("");
   const [installApps, setInstallApps] = useState<string[]>([]);
@@ -48,7 +50,6 @@ export default function ReleaseManager() {
     );
     setStatuses(initial);
 
-    // Executa manageRelease para cada account, atualizando status gradualmente
     for (const account of accounts) {
       setStatuses((prev) => ({
         ...prev,
@@ -64,7 +65,13 @@ export default function ReleaseManager() {
         resetWorkspace,
       });
       setStatuses((prev) => ({ ...prev, [account]: result }));
-
+      if (result && result.status === "error") {
+        toast({
+          title: `Erro ao processar release na conta ${account}`,
+          description: result.logs?.find((l) => l.includes("ERRO")) || "Erro desconhecido",
+          variant: "destructive",
+        });
+      }
       if (stopOnError && result?.status === "error") {
         break;
       }

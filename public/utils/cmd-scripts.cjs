@@ -56,7 +56,7 @@ async function versionChecker({ account, apps }) {
     console.error(`Falha ao processar conta ${account}:`, error.message);
     results.push({
       account: account,
-      error: "Falha na execução do comando",
+      error: "Falha na execução do comando: " + error.message,
     });
   }
 

@@ -4,6 +4,7 @@ const {
   ipcMain,
   autoUpdater,
   globalShortcut,
+  dialog,
 } = require("electron");
 const path = require("path");
 
@@ -16,13 +17,31 @@ const heigthWindowMode = 550;
 if (!isDev) {
   const server = "https://vtex-command-hub-hazel.vercel.app";
   const feed = `${server}/update/${process.platform}/${app.getVersion()}`;
-  autoUpdater.setFeedURL({ url: feed });
+  console.log("[autoUpdater] Feed URL:", feed);
+  try {
+    autoUpdater.setFeedURL({ url: feed });
+  } catch (e) {
+    console.error("[autoUpdater] setFeedURL error:", e);
+  }
 
   setInterval(() => {
+    console.log("[autoUpdater] Checking for updates...");
     autoUpdater.checkForUpdates();
   }, 60000);
 
+  autoUpdater.on("update-available", (info) => {
+    console.log("[autoUpdater] Update available:", info);
+  });
+
+  autoUpdater.on("update-not-available", (info) => {
+    console.log("[autoUpdater] No update available:", info);
+  });
+
   autoUpdater.on("update-downloaded", (event, releaseNotes, releaseName) => {
+    console.log("[autoUpdater] Update downloaded:", {
+      releaseNotes,
+      releaseName,
+    });
     const dialogOpts = {
       type: "info",
       buttons: ["Reiniciar", "Mais Tarde"],
@@ -38,6 +57,7 @@ if (!isDev) {
   });
 
   autoUpdater.on("error", (message) => {
+    console.error("[autoUpdater] Error:", message);
     const dialogOpts = {
       type: "error",
       buttons: ["Ok"],
@@ -57,7 +77,7 @@ function createWindow() {
     minimizable: true,
     maximizable: true,
     webPreferences: {
-      devTools: isDev,
+      devTools: true,
       backgroundThrottling: false,
       nodeIntegration: true,
       preload: path.join(__dirname, "preload.cjs"),

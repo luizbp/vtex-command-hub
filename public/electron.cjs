@@ -9,6 +9,18 @@ const {
 const path = require("path");
 
 const isDev = require("electron-is-dev")?.default || false;
+
+// Logger simples para arquivo
+const fs = require("fs");
+const logPath = path.join(app.getPath("userData"), "main.log");
+function logToFile(...args) {
+  const msg =
+    `[${new Date().toISOString()}] ` +
+    args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") +
+    "\n";
+  fs.appendFileSync(logPath, msg);
+}
+logToFile("TCL: isDev", isDev);
 const cmdScripts = require("./utils/cmd-scripts.cjs");
 
 const widthWindowMode = 820;
@@ -17,56 +29,17 @@ const heigthWindowMode = 550;
 if (!isDev) {
   const server = "https://vtex-command-hub-hazel.vercel.app";
   const feed = `${server}/update/${process.platform}/${app.getVersion()}`;
-  console.log("[autoUpdater] Feed URL:", feed);
+  logToFile("[autoUpdater] Feed URL:", feed);
   try {
     autoUpdater.setFeedURL({ url: feed });
   } catch (e) {
-    console.error("[autoUpdater] setFeedURL error:", e);
+    logToFile("[autoUpdater] setFeedURL error:", e);
   }
 
   setInterval(() => {
-    console.log("[autoUpdater] Checking for updates...");
+    logToFile("[autoUpdater] Checking for updates...");
     autoUpdater.checkForUpdates();
   }, 60000);
-
-  autoUpdater.on("update-available", (info) => {
-    console.log("[autoUpdater] Update available:", info);
-  });
-
-  autoUpdater.on("update-not-available", (info) => {
-    console.log("[autoUpdater] No update available:", info);
-  });
-
-  autoUpdater.on("update-downloaded", (event, releaseNotes, releaseName) => {
-    console.log("[autoUpdater] Update downloaded:", {
-      releaseNotes,
-      releaseName,
-    });
-    const dialogOpts = {
-      type: "info",
-      buttons: ["Reiniciar", "Mais Tarde"],
-      title: "Atualização Disponivel",
-      message: process.platform === "win32" ? releaseNotes : releaseName,
-      detail:
-        "Uma nova versão foi Baixada. Restart the application to apply the updates.",
-    };
-
-    dialog.showMessageBox(dialogOpts).then((returnValue) => {
-      if (returnValue.response === 0) autoUpdater.quitAndInstall();
-    });
-  });
-
-  autoUpdater.on("error", (message) => {
-    console.error("[autoUpdater] Error:", message);
-    const dialogOpts = {
-      type: "error",
-      buttons: ["Ok"],
-      title: "Erro na Atualização",
-      message: "Ocorreu um erro ao tentar atualizar o aplicativo.",
-      detail: message,
-    };
-    dialog.showMessageBox(dialogOpts);
-  });
 }
 
 function createWindow() {
@@ -77,23 +50,72 @@ function createWindow() {
     minimizable: true,
     maximizable: true,
     webPreferences: {
-      devTools: true,
+      devTools: isDev,
       backgroundThrottling: false,
       nodeIntegration: true,
       preload: path.join(__dirname, "preload.cjs"),
     },
-    // icon: `${__dirname}/logo192.png`,
+    icon: `${__dirname}/logo192.png`,
   });
 
   win.maximize();
 
-  win.setMenuBarVisibility(true);
+  win.setMenuBarVisibility(isDev);
 
   win.loadURL(
     isDev
       ? "http://localhost:8080"
       : `file://${path.join(__dirname, "../dist/index.html")}`,
   );
+
+  if (!isDev) {
+    autoUpdater.on("update-available", (info) => {
+      logToFile("[autoUpdater] Update available:", info);
+    });
+
+    autoUpdater.on("update-not-available", (info) => {
+      logToFile("[autoUpdater] No update available:", info);
+    });
+
+    autoUpdater.on("update-downloaded", (event, releaseNotes, releaseName) => {
+      logToFile("[autoUpdater] Update downloaded:", {
+        releaseNotes,
+        releaseName,
+      });
+      const dialogOpts = {
+        type: "info",
+        buttons: ["Reiniciar", "Mais Tarde"],
+        title: "Atualização Disponivel",
+        message: process.platform === "win32" ? releaseNotes : releaseName,
+        detail:
+          "Uma nova versão foi Baixada. Restart the application to apply the updates.",
+      };
+
+      dialog.showMessageBox(win, dialogOpts).then((returnValue) => {
+        if (returnValue.response === 0) autoUpdater.quitAndInstall();
+      });
+    });
+
+    autoUpdater.on("error", (err) => {
+      let errorMsg = "";
+      if (err instanceof Error) {
+        errorMsg = err.message + (err.stack ? "\n" + err.stack : "");
+      } else if (typeof err === "object" && err !== null) {
+        errorMsg = JSON.stringify(err);
+      } else {
+        errorMsg = String(err);
+      }
+      logToFile("[autoUpdater] Error:", errorMsg);
+      const dialogOpts = {
+        type: "error",
+        buttons: ["Ok"],
+        title: "Erro na Atualização",
+        message: "Ocorreu um erro ao tentar atualizar o aplicativo.",
+        detail: errorMsg,
+      };
+      dialog.showMessageBox(win, dialogOpts);
+    });
+  }
 
   return {
     win,

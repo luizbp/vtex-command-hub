@@ -126,4 +126,4 @@ Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](./LIC
 
 ---
 
-> Feito com ❤️ para o P1.
+> Feito com ❤️ para a Quality.

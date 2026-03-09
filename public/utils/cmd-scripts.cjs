@@ -131,6 +131,12 @@ async function manageRelease(options) {
     return state;
   }
 
+  if (workspace.toLowerCase() === "master" && resetWorkspace) {
+    state.status = "error";
+    state.logs.push("ERRO: Proibido rodar reset na master");
+    return state;
+  }
+
   try {
     // 1. Switch para a conta
     state.logs.push(`Trocando para a conta ${account}...`);

@@ -66,6 +66,7 @@ function createWindow() {
       const dialogOpts = {
         type: "info",
         buttons: ["Reiniciar", "Mais Tarde"],
+
         title: "Atualização Disponivel",
         message: process.platform === "win32" ? releaseNotes : releaseName,
         detail:

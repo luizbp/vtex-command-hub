@@ -16,7 +16,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import pkg from "../../package.json";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -27,6 +29,7 @@ const items = [
 ];
 
 export function AppSidebar() {
+  const { open } = useSidebar();
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
@@ -53,6 +56,11 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      {open && (
+        <p className="px-4 py-2 text-sm text-muted-foreground text-center size-xs">
+          <b>Version: {pkg.version}</b>
+        </p>
+      )}
     </Sidebar>
   );
 }

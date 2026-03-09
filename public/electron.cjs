@@ -1,4 +1,3 @@
-if (require("electron-squirrel-startup")) return;
 const {
   app,
   BrowserWindow,
@@ -7,6 +6,9 @@ const {
   globalShortcut,
   dialog,
 } = require("electron");
+
+if (require("electron-squirrel-startup")) return;
+
 const path = require("path");
 const { logToFile } = require("./utils/utils.cjs");
 
@@ -22,12 +24,9 @@ if (!isDev) {
 
   try {
     autoUpdater.setFeedURL({ url: feed });
-  } catch (e) {
-    logToFile(app, "[autoUpdater] setFeedURL error:", e);
-  }
+  } catch (e) {}
 
   setInterval(() => {
-    logToFile(app, "[autoUpdater] Checking for updates...");
     autoUpdater.checkForUpdates();
   }, 60000 * 10); // Check every 10 minutes
 }

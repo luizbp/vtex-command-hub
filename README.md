@@ -111,20 +111,15 @@ Contribuições são muito bem-vindas! Siga o fluxo abaixo para colaborar:
 
 ---
 
-
 ## ⬇️ Download
 
 Você pode baixar a versão mais recente do VTEX Command Hub diretamente pelo link abaixo:
 
-- [Baixar última versão (latest)](https://github.com/luizbp/vtex-command-hub/releases/latest/download/Vtex.Command.Hub.Setup.0.1.0.exe)
-
-> O instalador para Windows é o arquivo `Vtex.Command.Hub.Setup.0.1.0.exe`. Basta baixar e executar para instalar o aplicativo.
-
-Se desejar acessar outras versões ou ver o histórico de releases, acesse:
-
-- [Página de Releases no GitHub](https://github.com/luizbp/vtex-command-hub/releases)
+- [Baixe a última versão (latest)](https://github.com/luizbp/vtex-command-hub/releases)
+  > O instalador para Windows é o arquivo `Vtex.Command.Hub.Setup.x.x.x.exe`. Basta baixar e executar para instalar o aplicativo.
 
 ---
+
 ## 📄 Licença
 
 Este projeto está licenciado sob a licença MIT. Veja o arquivo [LICENSE](./LICENSE) para mais detalhes.

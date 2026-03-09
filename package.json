@@ -2,7 +2,7 @@
   "name": "vtex_command_hub",
   "private": true,
   "main": "public/electron.cjs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -44,6 +44,7 @@
       }
     ],
     "win": {
+      "icon": "public/logo256.ico",
       "target": [
         "squirrel"
       ]

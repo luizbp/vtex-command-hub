@@ -70,7 +70,7 @@ export function TagInput({
       (s) =>
         s.toLowerCase().includes(input.toLowerCase()) && !values.includes(s),
     )
-    .slice(0, 5);
+    .slice(0, 30);
 
   return (
     <div className="space-y-2">

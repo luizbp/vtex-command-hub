@@ -106,14 +106,23 @@ function createWindow() {
 
 app.whenReady().then(() => {
   const { win } = createWindow();
-  ipcMain.handle("versionChecker", async (_, ...args) =>
-    cmdScripts.versionChecker(...args),
+  ipcMain.handle("versionChecker", async (_, ...props) =>
+    cmdScripts.versionChecker(...props),
   );
-  ipcMain.handle("updateAccount", async (_, ...args) =>
-    cmdScripts.updateAccount(...args),
+  ipcMain.handle("updateAccount", async (_, ...props) =>
+    cmdScripts.updateAccount(...props),
   );
-  ipcMain.handle("manageRelease", async (_, ...args) =>
-    cmdScripts.manageRelease(...args),
+  ipcMain.handle("switchAccount", async (_, ...props) =>
+    cmdScripts.switchAccount(...props),
+  );
+  ipcMain.handle("createWorkspace", async (_, ...props) =>
+    cmdScripts.createWorkspace(...props),
+  );
+  ipcMain.handle("uninstallApps", async (_, ...props) =>
+    cmdScripts.uninstallApps(...props),
+  );
+  ipcMain.handle("installApps", async (_, ...props) =>
+    cmdScripts.installApps(...props),
   );
   ipcMain.on("reload-page", () => {
     win.reload();

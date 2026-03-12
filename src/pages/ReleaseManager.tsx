@@ -28,16 +28,47 @@ export default function ReleaseManager() {
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<string[]>([]);
   const [workspace, setWorkspace] = useState("");
-  const [installApps, setInstallApps] = useState<string[]>([]);
-  const [uninstallApps, setUninstallApps] = useState<string[]>([]);
+  const [appsToInstall, setAppsToInstall] = useState<string[]>([]);
+  const [appsToUninstall, setAppsToUninstall] = useState<string[]>([]);
   const [forceMaster, setForceMaster] = useState(false);
-  const [stopOnError, setStopOnError] = useState(false);
+  const [forceInstallation, setForceInstallation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statuses, setStatuses] = useState<
     Record<string, ReleaseAccountStatus>
   >({});
   const { getSettings } = useSettings();
   const { accounts: savedAccounts, apps: savedApps } = getSettings();
+
+  const handleLogs = ({
+    logsList,
+    log,
+    status,
+    account,
+    addHour = false,
+  }: {
+    logsList: string[];
+    log?: string | string[];
+    status: ReleaseAccountStatus["status"];
+    account: string;
+    addHour?: boolean;
+  }) => {
+    const currentDate = new Date();
+    const currentHour = `${currentDate.getHours().toString().padStart(2, "0")}:${currentDate.getMinutes().toString().padStart(2, "0")}:${currentDate.getSeconds().toString().padStart(2, "0")}`;
+    if (log) {
+      if (Array.isArray(log)) {
+        logsList.push(
+          ...log.map((l) => `${addHour ? `[${currentHour}] ` : ""}${l}`),
+        );
+      } else if (log) {
+        logsList.push(`${addHour ? `[${currentHour}] ` : ""}${log}`);
+      }
+    }
+
+    setStatuses((prev) => ({
+      ...prev,
+      [account]: { account, status, logs: [...logsList] },
+    }));
+  };
 
   const handleRun = async () => {
     if (!accounts.length || !workspace.trim()) return;
@@ -50,30 +81,164 @@ export default function ReleaseManager() {
     setStatuses(initial);
 
     for (const account of accounts) {
+      const logs: string[] = ["Iniciando..."];
+      let status: ReleaseAccountStatus["status"] = "in_progress";
       setStatuses((prev) => ({
         ...prev,
-        [account]: { account, status: "in_progress", logs: ["Iniciando..."] },
+        [account]: { account, status, logs },
       }));
-      const result = await window.electronAPI?.manageRelease({
+
+      // 1. Switch para a conta
+      handleLogs({
+        logsList: logs,
+        log: "Iniciado switch de conta",
+        status,
         account,
-        workspace: workspace.trim(),
-        appsToInstall: installApps,
-        appsToUninstall: uninstallApps,
-        forceMaster,
-        stopOnError,
+        addHour: true,
       });
-      setStatuses((prev) => ({ ...prev, [account]: result }));
-      if (result && result.status === "error") {
+      const switchRes = await window.electronAPI?.switchAccount({ account });
+      handleLogs({
+        logsList: logs,
+        log: switchRes?.log || "",
+        status,
+        account,
+      });
+      if (!switchRes?.success) {
+        status = "error";
+        handleLogs({
+          logsList: logs,
+          status,
+          account,
+        });
         toast({
-          title: `Erro ao processar release na conta ${account}`,
-          description:
-            result.logs?.find((l) => l.includes("ERRO")) || "Erro desconhecido",
+          title: `Erro ao trocar para a conta ${account}`,
+          description: switchRes?.log,
           variant: "destructive",
         });
-      }
-      if (stopOnError && result?.status === "error") {
         break;
       }
+
+      // 2. Cria workspace
+      handleLogs({
+        logsList: logs,
+        log: "Iniciado criação de workspace",
+        status,
+        account,
+        addHour: true,
+      });
+      const wsRes = await window.electronAPI?.createWorkspace({
+        account,
+        workspace: workspace.trim(),
+      });
+      handleLogs({
+        logsList: logs,
+        log: wsRes?.log || "",
+        status,
+        account,
+      });
+      if (!wsRes?.success) {
+        status = "error";
+        handleLogs({
+          logsList: logs,
+          status,
+          account,
+        });
+        toast({
+          title: `Erro ao criar workspace na conta ${account}`,
+          description: wsRes?.log,
+          variant: "destructive",
+        });
+        break;
+      }
+
+      // 3. Desinstala apps
+      if (appsToUninstall.length > 0) {
+        handleLogs({
+          logsList: logs,
+          log: "Iniciado processo de desinstalação de apps",
+          status,
+          account,
+          addHour: true,
+        });
+        const uninstallRes = await window.electronAPI?.uninstallApps({
+          account,
+          workspace: workspace.trim(),
+          appsToUninstall,
+          forceInstallation,
+          forceMaster,
+        });
+        handleLogs({
+          logsList: logs,
+          log: uninstallRes?.logs || "",
+          status,
+          account,
+        });
+        if (!uninstallRes?.success) {
+          status = "error";
+          handleLogs({
+            logsList: logs,
+            status,
+            account,
+          });
+          toast({
+            title: `Erro ao desinstalar apps na conta ${account}`,
+            description:
+              uninstallRes?.logs?.find((l) => l.includes("FALHOU")) ||
+              "Erro desconhecido",
+            variant: "destructive",
+          });
+          break;
+        }
+      }
+
+      // 4. Instala apps
+      if (appsToInstall.length > 0) {
+        handleLogs({
+          logsList: logs,
+          log: "Iniciado processo de instalação de apps",
+          status,
+          account,
+          addHour: true,
+        });
+
+        const installRes = await window.electronAPI?.installApps({
+          account,
+          workspace: workspace.trim(),
+          appsToInstall,
+          forceInstallation,
+          forceMaster,
+        });
+        handleLogs({
+          logsList: logs,
+          log: installRes?.logs || "",
+          status,
+          account,
+        });
+        if (!installRes?.success) {
+          status = "error";
+          handleLogs({
+            logsList: logs,
+            status,
+            account,
+          });
+          toast({
+            title: `Erro ao instalar apps na conta ${account}`,
+            description:
+              installRes?.logs?.find((l) => l.includes("FALHOU")) ||
+              "Erro desconhecido",
+            variant: "destructive",
+          });
+          break;
+        }
+      }
+
+      logs.push("Processo concluído.");
+      handleLogs({
+        logsList: logs,
+        log: "Processo concluído.",
+        status: "done",
+        account,
+      });
     }
 
     setLoading(false);
@@ -108,8 +273,8 @@ export default function ReleaseManager() {
         </div>
         <TagInput
           label="Apps para Instalar (opcional)"
-          values={installApps}
-          onChange={setInstallApps}
+          values={appsToInstall}
+          onChange={setAppsToInstall}
           suggestions={savedApps}
           fillOnSelect
           suffixWhenFilling="@"
@@ -117,8 +282,8 @@ export default function ReleaseManager() {
         />
         <TagInput
           label="Apps para Desinstalar (opcional)"
-          values={uninstallApps}
-          onChange={setUninstallApps}
+          values={appsToUninstall}
+          onChange={setAppsToUninstall}
           suggestions={savedApps}
           fillOnSelect
           suffixWhenFilling="@"
@@ -136,10 +301,10 @@ export default function ReleaseManager() {
         </label>
         <label className="flex items-center gap-2 text-sm">
           <Checkbox
-            checked={stopOnError}
-            onCheckedChange={(v) => setStopOnError(!!v)}
+            checked={forceInstallation}
+            onCheckedChange={(v) => setForceInstallation(!!v)}
           />
-          Parar em caso de erro
+          Forçar instalação/desinstalação dos apps
         </label>
       </div>
 
@@ -151,7 +316,7 @@ export default function ReleaseManager() {
       </Button>
 
       {Object.keys(statuses).length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
           {accounts.map((account) => {
             const s = statuses[account];
             if (!s) return null;

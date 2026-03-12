@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +15,7 @@ const statusColors: Record<ReleaseAccountStatus["status"], string> = {
   in_progress: "bg-primary/20 text-primary",
   done: "bg-green-500/20 text-green-500",
   error: "bg-destructive/20 text-destructive",
+  stopped: "bg-yellow-500/20 text-yellow-500",
 };
 
 const statusLabels: Record<ReleaseAccountStatus["status"], string> = {
@@ -22,6 +23,7 @@ const statusLabels: Record<ReleaseAccountStatus["status"], string> = {
   in_progress: "Em Progresso",
   done: "Concluído",
   error: "Erro",
+  stopped: "Interrompido",
 };
 
 export default function ReleaseManager() {
@@ -36,17 +38,34 @@ export default function ReleaseManager() {
   const [statuses, setStatuses] = useState<
     Record<string, ReleaseAccountStatus>
   >({});
+  const stopped = useRef(false);
   const { getSettings } = useSettings();
   const { accounts: savedAccounts, apps: savedApps } = getSettings();
 
+  const handleStop = ({
+    logs,
+    account,
+  }: {
+    logs: string[];
+    account: string;
+  }) => {
+    handleLogs({
+      logs,
+      log: "Processo interrompido pelo usuário.",
+      status: "stopped",
+      account,
+      addHour: true,
+    });
+  };
+
   const handleLogs = ({
-    logsList,
+    logs,
     log,
     status,
     account,
     addHour = false,
   }: {
-    logsList: string[];
+    logs: string[];
     log?: string | string[];
     status: ReleaseAccountStatus["status"];
     account: string;
@@ -56,23 +75,228 @@ export default function ReleaseManager() {
     const currentHour = `${currentDate.getHours().toString().padStart(2, "0")}:${currentDate.getMinutes().toString().padStart(2, "0")}:${currentDate.getSeconds().toString().padStart(2, "0")}`;
     if (log) {
       if (Array.isArray(log)) {
-        logsList.push(
+        logs.push(
           ...log.map((l) => `${addHour ? `[${currentHour}] ` : ""}${l}`),
         );
       } else if (log) {
-        logsList.push(`${addHour ? `[${currentHour}] ` : ""}${log}`);
+        logs.push(`${addHour ? `[${currentHour}] ` : ""}${log}`);
       }
     }
 
     setStatuses((prev) => ({
       ...prev,
-      [account]: { account, status, logs: [...logsList] },
+      [account]: { account, status, logs: [...logs] },
     }));
   };
 
+  // Função genérica para executar o fluxo de uma account
+  const execAccount = async (account: string) => {
+    setStatuses((prev) => ({
+      ...prev,
+      [account]: { account, status: "pending", logs: [] },
+    }));
+    const logs: string[] = ["Iniciando..."];
+    let status: ReleaseAccountStatus["status"] = "in_progress";
+    setStatuses((prev) => ({
+      ...prev,
+      [account]: { account, status, logs },
+    }));
+
+    if (stopped.current) {
+      handleStop({
+        account,
+        logs,
+      });
+
+      return;
+    }
+
+    // 1. Switch para a conta
+    handleLogs({
+      logs: logs,
+      log: "Iniciado switch de conta",
+      status,
+      account,
+      addHour: true,
+    });
+    const switchRes = await window.electronAPI?.switchAccount({ account });
+    handleLogs({
+      logs: logs,
+      log: switchRes?.log || "",
+      status,
+      account,
+    });
+    if (!switchRes?.success) {
+      status = "error";
+      handleLogs({
+        logs: logs,
+        status,
+        account,
+      });
+      toast({
+        title: `Erro ao trocar para a conta ${account}`,
+        description: switchRes?.log,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (stopped.current) {
+      handleStop({
+        account,
+        logs,
+      });
+
+      return;
+    }
+
+    // 2. Cria workspace
+    handleLogs({
+      logs: logs,
+      log: "Iniciado criação de workspace",
+      status,
+      account,
+      addHour: true,
+    });
+    const wsRes = await window.electronAPI?.createWorkspace({
+      account,
+      workspace: workspace.trim(),
+    });
+    handleLogs({
+      logs: logs,
+      log: wsRes?.log || "",
+      status,
+      account,
+    });
+    if (!wsRes?.success) {
+      status = "error";
+      handleLogs({
+        logs: logs,
+        status,
+        account,
+      });
+      toast({
+        title: `Erro ao criar workspace na conta ${account}`,
+        description: wsRes?.log,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (stopped.current) {
+      handleStop({
+        account,
+        logs,
+      });
+
+      return;
+    }
+
+    // 3. Desinstala apps
+    if (appsToUninstall.length > 0) {
+      handleLogs({
+        logs: logs,
+        log: "Iniciado processo de desinstalação de apps",
+        status,
+        account,
+        addHour: true,
+      });
+      const uninstallRes = await window.electronAPI?.uninstallApps({
+        account,
+        workspace: workspace.trim(),
+        appsToUninstall,
+        forceInstallation,
+        forceMaster,
+      });
+      handleLogs({
+        logs: logs,
+        log: uninstallRes?.logs || "",
+        status,
+        account,
+      });
+      if (!uninstallRes?.success) {
+        status = "error";
+        handleLogs({
+          logs: logs,
+          status,
+          account,
+        });
+        toast({
+          title: `Erro ao desinstalar apps na conta ${account}`,
+          description:
+            uninstallRes?.logs?.find((l) => l.includes("FALHOU")) ||
+            "Erro desconhecido",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
+    if (stopped.current) {
+      handleStop({
+        account,
+        logs,
+      });
+
+      return;
+    }
+
+    // 4. Instala apps
+    if (appsToInstall.length > 0) {
+      handleLogs({
+        logs: logs,
+        log: "Iniciado processo de instalação de apps",
+        status,
+        account,
+        addHour: true,
+      });
+
+      const installRes = await window.electronAPI?.installApps({
+        account,
+        workspace: workspace.trim(),
+        appsToInstall,
+        forceInstallation,
+        forceMaster,
+      });
+      handleLogs({
+        logs: logs,
+        log: installRes?.logs || "",
+        status,
+        account,
+      });
+      if (!installRes?.success) {
+        status = "error";
+        handleLogs({
+          logs: logs,
+          status,
+          account,
+        });
+        toast({
+          title: `Erro ao instalar apps na conta ${account}`,
+          description:
+            installRes?.logs?.find((l) => l.includes("FALHOU")) ||
+            "Erro desconhecido",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
+    handleLogs({
+      logs: logs,
+      log: "Processo concluído.",
+      status: "done",
+      account,
+      addHour: true,
+    });
+    return true;
+  };
+
+  // Executa todas as accounts
   const handleRun = async () => {
     if (!accounts.length || !workspace.trim()) return;
     setLoading(true);
+    stopped.current = false;
 
     const initial: Record<string, ReleaseAccountStatus> = {};
     accounts.forEach(
@@ -81,166 +305,18 @@ export default function ReleaseManager() {
     setStatuses(initial);
 
     for (const account of accounts) {
-      const logs: string[] = ["Iniciando..."];
-      let status: ReleaseAccountStatus["status"] = "in_progress";
-      setStatuses((prev) => ({
-        ...prev,
-        [account]: { account, status, logs },
-      }));
-
-      // 1. Switch para a conta
-      handleLogs({
-        logsList: logs,
-        log: "Iniciado switch de conta",
-        status,
-        account,
-        addHour: true,
-      });
-      const switchRes = await window.electronAPI?.switchAccount({ account });
-      handleLogs({
-        logsList: logs,
-        log: switchRes?.log || "",
-        status,
-        account,
-      });
-      if (!switchRes?.success) {
-        status = "error";
-        handleLogs({
-          logsList: logs,
-          status,
-          account,
-        });
-        toast({
-          title: `Erro ao trocar para a conta ${account}`,
-          description: switchRes?.log,
-          variant: "destructive",
-        });
-        break;
-      }
-
-      // 2. Cria workspace
-      handleLogs({
-        logsList: logs,
-        log: "Iniciado criação de workspace",
-        status,
-        account,
-        addHour: true,
-      });
-      const wsRes = await window.electronAPI?.createWorkspace({
-        account,
-        workspace: workspace.trim(),
-      });
-      handleLogs({
-        logsList: logs,
-        log: wsRes?.log || "",
-        status,
-        account,
-      });
-      if (!wsRes?.success) {
-        status = "error";
-        handleLogs({
-          logsList: logs,
-          status,
-          account,
-        });
-        toast({
-          title: `Erro ao criar workspace na conta ${account}`,
-          description: wsRes?.log,
-          variant: "destructive",
-        });
-        break;
-      }
-
-      // 3. Desinstala apps
-      if (appsToUninstall.length > 0) {
-        handleLogs({
-          logsList: logs,
-          log: "Iniciado processo de desinstalação de apps",
-          status,
-          account,
-          addHour: true,
-        });
-        const uninstallRes = await window.electronAPI?.uninstallApps({
-          account,
-          workspace: workspace.trim(),
-          appsToUninstall,
-          forceInstallation,
-          forceMaster,
-        });
-        handleLogs({
-          logsList: logs,
-          log: uninstallRes?.logs || "",
-          status,
-          account,
-        });
-        if (!uninstallRes?.success) {
-          status = "error";
-          handleLogs({
-            logsList: logs,
-            status,
-            account,
-          });
-          toast({
-            title: `Erro ao desinstalar apps na conta ${account}`,
-            description:
-              uninstallRes?.logs?.find((l) => l.includes("FALHOU")) ||
-              "Erro desconhecido",
-            variant: "destructive",
-          });
-          break;
-        }
-      }
-
-      // 4. Instala apps
-      if (appsToInstall.length > 0) {
-        handleLogs({
-          logsList: logs,
-          log: "Iniciado processo de instalação de apps",
-          status,
-          account,
-          addHour: true,
-        });
-
-        const installRes = await window.electronAPI?.installApps({
-          account,
-          workspace: workspace.trim(),
-          appsToInstall,
-          forceInstallation,
-          forceMaster,
-        });
-        handleLogs({
-          logsList: logs,
-          log: installRes?.logs || "",
-          status,
-          account,
-        });
-        if (!installRes?.success) {
-          status = "error";
-          handleLogs({
-            logsList: logs,
-            status,
-            account,
-          });
-          toast({
-            title: `Erro ao instalar apps na conta ${account}`,
-            description:
-              installRes?.logs?.find((l) => l.includes("FALHOU")) ||
-              "Erro desconhecido",
-            variant: "destructive",
-          });
-          break;
-        }
-      }
-
-      logs.push("Processo concluído.");
-      handleLogs({
-        logsList: logs,
-        log: "Processo concluído.",
-        status: "done",
-        account,
-      });
+      if (stopped.current) break;
+      await execAccount(account);
     }
 
+    setLoading(false);
+  };
+
+  // Retry para uma account específica
+  const handleRetryAccount = async (account: string) => {
+    setLoading(true);
+    stopped.current = false;
+    await execAccount(account);
     setLoading(false);
   };
 
@@ -262,6 +338,7 @@ export default function ReleaseManager() {
           onChange={setAccounts}
           placeholder={`Digite ${savedAccounts.length ? "ou selecione " : ""}uma account e pressione Enter`}
           suggestions={savedAccounts}
+          disabled={loading}
         />
         <div className="space-y-2">
           <label className="text-sm font-medium">Nome da Workspace</label>
@@ -269,6 +346,7 @@ export default function ReleaseManager() {
             placeholder="release-v2.0"
             value={workspace}
             onChange={(e) => setWorkspace(e.target.value)}
+            disabled={loading}
           />
         </div>
         <TagInput
@@ -279,6 +357,7 @@ export default function ReleaseManager() {
           fillOnSelect
           suffixWhenFilling="@"
           placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.new-app`}
+          disabled={loading}
         />
         <TagInput
           label="Apps para Desinstalar (opcional)"
@@ -288,6 +367,7 @@ export default function ReleaseManager() {
           fillOnSelect
           suffixWhenFilling="@"
           placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.old-app`}
+          disabled={loading}
         />
       </div>
 
@@ -296,6 +376,7 @@ export default function ReleaseManager() {
           <Checkbox
             checked={forceMaster}
             onCheckedChange={(v) => setForceMaster(!!v)}
+            disabled={loading}
           />
           Forçar uso na Master
         </label>
@@ -303,17 +384,29 @@ export default function ReleaseManager() {
           <Checkbox
             checked={forceInstallation}
             onCheckedChange={(v) => setForceInstallation(!!v)}
+            disabled={loading}
           />
           Forçar instalação/desinstalação dos apps
         </label>
       </div>
 
-      <Button
-        onClick={handleRun}
-        disabled={loading || !accounts.length || !workspace.trim()}
-      >
-        {loading ? "Executando..." : "Iniciar Processo"}
-      </Button>
+      <div className="flex gap-4">
+        <Button
+          onClick={handleRun}
+          disabled={loading || !accounts.length || !workspace.trim()}
+        >
+          {loading ? "Executando..." : "Iniciar Processo"}
+        </Button>
+        {loading && (
+          <Button
+            variant="destructive"
+            onClick={() => (stopped.current = true)}
+            type="button"
+          >
+            Parar execução
+          </Button>
+        )}
+      </div>
 
       {Object.keys(statuses).length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
@@ -340,12 +433,24 @@ export default function ReleaseManager() {
                             ? "text-destructive"
                             : "text-muted-foreground",
                           log.includes("sucesso") && "text-green-500",
+                          log.includes("interrompido") && "text-yellow-500",
                         )}
                       >
                         {log}
                       </div>
                     ))}
                   </div>
+                  {s.status === "error" && !loading && (
+                    <div className='mt-2'>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRetryAccount(account)}
+                      >
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

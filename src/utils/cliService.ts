@@ -30,7 +30,7 @@ export interface UpdateLog {
 
 export interface ReleaseAccountStatus {
   account: string;
-  status: "pending" | "in_progress" | "done" | "error";
+  status: "pending" | "in_progress" | "done" | "error" | "stopped";
   logs: string[];
 }
 

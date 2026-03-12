@@ -10,7 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added util function for retry function of install and desinstall apps
-- Separate the routines for each function to be able to see progress by account.
+- Separate the routines for each function to be able to see progress by account
+- Respin button for accounts with errors
+- Stop execution button
+- Lock inputs during execution:
 
 ### Fixed
 

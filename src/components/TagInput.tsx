@@ -11,6 +11,7 @@ interface TagInputProps {
   suggestions?: string[];
   fillOnSelect?: boolean;
   suffixWhenFilling?: string;
+  disabled?: boolean;
 }
 
 export function TagInput({
@@ -21,6 +22,7 @@ export function TagInput({
   suggestions = [],
   fillOnSelect = false,
   suffixWhenFilling = "",
+  disabled = false,
 }: TagInputProps) {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -82,6 +84,7 @@ export function TagInput({
             <button
               type="button"
               onClick={() => removeTag(i)}
+              disabled={disabled}
               className="ml-0.5 rounded-sm hover:bg-muted-foreground/20 p-0.5"
             >
               <X className="h-3 w-3" />
@@ -95,6 +98,7 @@ export function TagInput({
               setInput(e.target.value);
               setShowSuggestions(true);
             }}
+            disabled={disabled}
             onKeyDown={handleKeyDown}
             onBlur={handleOnBlur}
             placeholder={values.length === 0 ? placeholder : ""}

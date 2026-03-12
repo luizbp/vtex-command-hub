@@ -1,5 +1,6 @@
 const { exec } = require("child_process");
 const util = require("util");
+const { getMessage, retryFunction } = require("./utils.cjs");
 
 // Transforma o exec em uma versão que aceita async/await
 const execPromise = util.promisify(exec);
@@ -53,10 +54,10 @@ async function versionChecker({ account, apps }) {
       versions: versionsFound,
     });
   } catch (error) {
-    console.error(`Falha ao processar conta ${account}:`, error.message);
+    console.error(`Falha ao processar conta ${account}:`, getMessage(error));
     results.push({
       account: account,
-      error: "Falha na execução do comando: " + error.message,
+      error: "Falha na execução do comando: " + getMessage(error),
     });
   }
 
@@ -88,10 +89,10 @@ async function updateAccount(account) {
       status: "success",
     };
   } catch (error) {
-    console.error(`Falha ao processar conta ${account}:`, error.message);
+    console.error(`Falha ao processar conta ${account}:`, getMessage(error));
     return {
       account: account,
-      message: `Falha na execução do comando: ${error.message}`,
+      message: `Falha na execução do comando: ${getMessage(error)}`,
       status: "error",
     };
   }
@@ -108,6 +109,7 @@ async function updateAccount(account) {
  * @param {boolean} options.forceMaster - Permite uso da master.
  * @param {boolean} options.stopOnError - Para execução ao encontrar erro.
  * @param {boolean} options.resetWorkspace - Reseta o workspace antes de instalar/desinstalar apps.
+ * @param {boolean} options.forceInstallation - Força a instalação e desinstalação mesmo em condições restritas.
  * @returns {Promise<{account: string, status: string, logs: string[]}>}
  */
 async function manageRelease(options) {
@@ -119,6 +121,7 @@ async function manageRelease(options) {
     forceMaster = false,
     stopOnError = false,
     resetWorkspace = false,
+    forceInstallation = true,
   } = options;
   const state = { account, status: "in_progress", logs: [] };
 
@@ -143,12 +146,8 @@ async function manageRelease(options) {
     await execPromise(`vtex switch ${account}`);
 
     // 2. Cria workspace
-    state.logs.push(
-      `Criando ${resetWorkspace ? "e resetando a" : ""} workspace \"${workspace}\"...`,
-    );
-    await execPromise(
-      `yes | vtex use ${workspace} ${resetWorkspace ? "-r" : ""}`,
-    );
+    state.logs.push(`Criando workspace \"${workspace}\"...`);
+    await execPromise(`echo yes | vtex use ${workspace}`);
     state.logs.push(`Workspace \"${workspace}\" criado com sucesso.`);
 
     // Checa se está na workspace master antes de instalar/desinstalar apps
@@ -171,7 +170,7 @@ async function manageRelease(options) {
         }
       } catch (err) {
         state.status = "error";
-        state.logs.push(`ERRO ao checar workspace atual: ${err.message}`);
+        state.logs.push(`ERRO ao checar workspace atual: ${getMessage(err)}`);
         return state;
       }
     }
@@ -181,14 +180,29 @@ async function manageRelease(options) {
       state.logs.push("Desinstalando apps...");
       for (const app of appsToUninstall) {
         try {
-          await execPromise(`yes | vtex uninstall ${app}`);
+          await retryFunction(() =>
+            execPromise(
+              `echo yes | vtex uninstall ${app} ${forceInstallation ? "--force" : ""}`,
+            ),
+          );
           state.logs.push(`  ↳ ${app} desinstalado`);
         } catch (err) {
-          state.logs.push(`  ↳ ${app} FALHOU na desinstalação ✗`);
-          if (stopOnError) {
+          const msg = getMessage(err);
+          if (
+            !msg.toLowerCase().includes("404: not found") &&
+            !msg.toLowerCase().includes("404: não encontrado") &&
+            stopOnError
+          ) {
+            state.logs.push(
+              `  ↳ ${app} FALHOU na desinstalação - ${getMessage(err)} ✗`,
+            );
             state.status = "error";
             return state;
           }
+
+          state.logs.push(
+            `  ↳ ${app} não encontrado para desinstalar, pulando...`,
+          );
         }
       }
     }
@@ -198,10 +212,16 @@ async function manageRelease(options) {
       state.logs.push("Instalando apps...");
       for (const app of appsToInstall) {
         try {
-          await execPromise(`yes | vtex install ${app}`);
+          await retryFunction(() =>
+            execPromise(
+              `echo yes | vtex install ${app} ${forceInstallation ? "--force" : ""}`,
+            ),
+          );
           state.logs.push(`  ↳ ${app} instalado com sucesso ✓`);
         } catch (err) {
-          state.logs.push(`  ↳ ${app} FALHOU na instalação ✗`);
+          state.logs.push(
+            `  ↳ ${app} FALHOU na instalação - ${getMessage(err)} ✗`,
+          );
           if (stopOnError) {
             state.status = "error";
             return state;
@@ -215,7 +235,7 @@ async function manageRelease(options) {
     return state;
   } catch (error) {
     state.status = "error";
-    state.logs.push(`ERRO: ${error.message}`);
+    state.logs.push(`ERRO: ${getMessage(error)}`);
     return state;
   }
 }

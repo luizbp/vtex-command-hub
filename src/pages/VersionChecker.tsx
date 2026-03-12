@@ -73,7 +73,6 @@ export default function VersionChecker() {
   const [errorAccounts, setErrorAccounts] = useState<
     { account: string; error: string }[]
   >([]);
-  console.log("TCL: VersionChecker -> errorAccounts", errorAccounts);
 
   // Filtra logs conforme filtros
   const filteredLogs = useMemo(() => {
@@ -236,24 +235,25 @@ export default function VersionChecker() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="sticky left-0 bg-card z-10">
-                    Apps
+                    Accounts
                   </TableHead>
-                  {accounts.map((account) => (
-                    <TableHead key={account} className="whitespace-nowrap">
-                      {account}
+                  {results.map((r) => (
+                    <TableHead key={r.app} className="whitespace-nowrap">
+                      {r.app}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((r) => (
-                  <TableRow key={r.app}>
+                {accounts.map((account) => (
+                  <TableRow key={account}>
                     <TableCell className="sticky left-0 bg-card z-10 font-medium">
-                      {r.app}
+                      {account}
                     </TableCell>
-                    {accounts.map((account) => (
-                      <TableCell key={account} className="whitespace-nowrap">
-                        {r.accountVersions[account] ? (
+                    {results.map((r) => (
+                      <TableCell key={r.app} className="whitespace-nowrap">
+                        {r.accountVersions[account] &&
+                        r.accountVersions[account] !== "Não instalado" ? (
                           <span className="font-mono text-sm">
                             {r.accountVersions[account]}
                           </span>

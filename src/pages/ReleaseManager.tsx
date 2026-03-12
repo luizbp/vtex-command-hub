@@ -25,14 +25,13 @@ const statusLabels: Record<ReleaseAccountStatus["status"], string> = {
 };
 
 export default function ReleaseManager() {
-    const { toast } = useToast();
+  const { toast } = useToast();
   const [accounts, setAccounts] = useState<string[]>([]);
   const [workspace, setWorkspace] = useState("");
   const [installApps, setInstallApps] = useState<string[]>([]);
   const [uninstallApps, setUninstallApps] = useState<string[]>([]);
   const [forceMaster, setForceMaster] = useState(false);
   const [stopOnError, setStopOnError] = useState(false);
-  const [resetWorkspace, setResetWorkspace] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statuses, setStatuses] = useState<
     Record<string, ReleaseAccountStatus>
@@ -62,13 +61,13 @@ export default function ReleaseManager() {
         appsToUninstall: uninstallApps,
         forceMaster,
         stopOnError,
-        resetWorkspace,
       });
       setStatuses((prev) => ({ ...prev, [account]: result }));
       if (result && result.status === "error") {
         toast({
           title: `Erro ao processar release na conta ${account}`,
-          description: result.logs?.find((l) => l.includes("ERRO")) || "Erro desconhecido",
+          description:
+            result.logs?.find((l) => l.includes("ERRO")) || "Erro desconhecido",
           variant: "destructive",
         });
       }
@@ -141,13 +140,6 @@ export default function ReleaseManager() {
             onCheckedChange={(v) => setStopOnError(!!v)}
           />
           Parar em caso de erro
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={resetWorkspace}
-            onCheckedChange={(v) => setResetWorkspace(!!v)}
-          />
-          Resetar ws antes de instalar/desinstalar apps
         </label>
       </div>
 

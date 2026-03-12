@@ -10,6 +10,38 @@ function logToFile(app, ...args) {
   fs.appendFileSync(logPath, msg);
 }
 
+function getMessage(message) {
+  return (
+    `[${new Date().toISOString()}] ` +
+    (typeof message === "string" ? message : JSON.stringify(message)) +
+    "\n"
+  );
+}
+
+/**
+ * Tenta executar uma função várias vezes em caso de erro.
+ * @param {Function} fn - Função a ser executada (pode retornar Promise ou valor).
+ * @param {number} retries - Número de tentativas.
+ * @param {number} delayMs - Tempo em ms entre tentativas (opcional).
+ * @returns {Promise<*>} Resultado da função, se bem-sucedida.
+ */
+async function retryFunction(fn, retries = 3, delayMs = 0) {
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries && delayMs > 0) {
+        await new Promise((res) => setTimeout(res, delayMs));
+      }
+    }
+  }
+  throw lastError;
+}
+
 module.exports = {
   logToFile,
+  getMessage,
+  retryFunction,
 };

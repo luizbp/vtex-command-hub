@@ -26,7 +26,6 @@ declare global {
         appsToUninstall: string[];
         forceMaster: boolean;
         stopOnError: boolean;
-        resetWorkspace: boolean;
       }) => Promise<ReleaseAccountStatus>;
     };
   }

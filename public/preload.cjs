@@ -3,9 +3,12 @@ contextBridge.exposeInMainWorld("ipcRenderer", ipcRenderer);
 
 // API Definition
 const electronAPI = {
-  versionChecker: (prop) => ipcRenderer.invoke("versionChecker", prop),
-  updateAccount: (prop) => ipcRenderer.invoke("updateAccount", prop),
-  manageRelease: (prop) => ipcRenderer.invoke("manageRelease", prop),
+  versionChecker: (props) => ipcRenderer.invoke("versionChecker", props),
+  updateAccount: (props) => ipcRenderer.invoke("updateAccount", props),
+  switchAccount: (props) => ipcRenderer.invoke("switchAccount", props),
+  createWorkspace: (props) => ipcRenderer.invoke("createWorkspace", props),
+  uninstallApps: (props) => ipcRenderer.invoke("uninstallApps", props),
+  installApps: (props) => ipcRenderer.invoke("installApps", props),
 };
 
 // Register the API with the contextBridge

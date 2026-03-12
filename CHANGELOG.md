@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.0] 2026-03-12
+
+### Added
+
+- Added util function for retry function of install and desinstall apps
+- Separate the routines for each function to be able to see progress by account
+- Respin button for accounts with errors
+- Stop execution button
+- Lock inputs during execution:
+
+### Fixed
+
+- Correcting the position of the shortcut component
+- Apply a retry to the app uninstall function to mitigate errors.
+
 ## [0.1.3] 2026-03-06
 
 ### Change

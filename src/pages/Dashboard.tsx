@@ -69,16 +69,6 @@ export default function Dashboard() {
         <span className="italic text-muted-foreground">{randomQuote}</span>
       </div>
 
-      {/* Última verificação de versões registrada (se houver) */}
-      {lastLog && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">
-            Última verificação de versões registrada
-          </h2>
-          <PastExecutionViewer log={lastLog} />
-        </div>
-      )}
-
       {/* Shortcuts */}
       <div>
         <h2 className="text-lg font-semibold mb-4">Acesso Rápido</h2>
@@ -102,6 +92,16 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* Última verificação de versões registrada (se houver) */}
+      {lastLog && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">
+            Última verificação de versões registrada
+          </h2>
+          <PastExecutionViewer log={lastLog} />
+        </div>
+      )}
     </div>
   );
 }

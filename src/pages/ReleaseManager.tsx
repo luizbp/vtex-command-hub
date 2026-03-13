@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TagInput } from "@/components/TagInput";
 import type { ReleaseAccountStatus } from "@/utils/cliService";
-import { cn } from "@/lib/utils";
+import { checkFormatAppName, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/use-settings";
 
@@ -352,21 +352,47 @@ export default function ReleaseManager() {
         <TagInput
           label="Apps para Instalar (opcional)"
           values={appsToInstall}
-          onChange={setAppsToInstall}
+          onChange={(value) => {
+            const isValid = checkFormatAppName(value, true);
+            if (!isValid) {
+              toast({
+                title: "Formato de app inválido",
+                description:
+                  "O formato deve ser vendor.app@major.minor.patch, ex: vtex.app-custom@1.0.0",
+                variant: "destructive",
+              });
+              return;
+            }
+
+            setAppsToInstall(value);
+          }}
           suggestions={savedApps}
           fillOnSelect
           suffixWhenFilling="@"
-          placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.new-app`}
+          placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.new-app@1.0.0`}
           disabled={loading}
         />
         <TagInput
           label="Apps para Desinstalar (opcional)"
           values={appsToUninstall}
-          onChange={setAppsToUninstall}
+          onChange={(value) => {
+            const isValid = checkFormatAppName(value, true);
+            if (!isValid) {
+              toast({
+                title: "Formato de app inválido",
+                description:
+                  "O formato deve ser vendor.app@major.minor.patch, ex: vtex.app-custom@1.0.0",
+                variant: "destructive",
+              });
+              return;
+            }
+
+            setAppsToUninstall(value);
+          }}
           suggestions={savedApps}
           fillOnSelect
           suffixWhenFilling="@"
-          placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.old-app`}
+          placeholder={`Digite ${savedApps.length ? "ou selecione " : ""}um app e pressione Enter. Ex: vtex.old-app@1.0.0`}
           disabled={loading}
         />
       </div>
@@ -441,7 +467,7 @@ export default function ReleaseManager() {
                     ))}
                   </div>
                   {s.status === "error" && !loading && (
-                    <div className='mt-2'>
+                    <div className="mt-2">
                       <Button
                         size="sm"
                         variant="outline"

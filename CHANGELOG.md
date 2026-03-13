@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Add a label instructing users to enter “{vendor}.{app}” and a regular expression to validate the input before adding it
+- Allow the use of the arrow keys to select options from dropdown menus
+
 ## [0.2.0] 2026-03-12
 
 ### Added

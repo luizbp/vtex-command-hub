@@ -43,3 +43,13 @@ export function transformVersions(data: VersionResult[]): AppVersions[] {
     };
   });
 }
+
+export const checkFormatAppName = (appName: string[], checkVersion = false) => {
+  const versionPattern = /^[a-z0-9]+\.[a-z0-9-_]+@[0-9]+\.[0-9]+\.[0-9]+$/;
+  const vendorAppPattern = /^[a-z0-9]+(\.[a-z0-9-_]+)+$/;
+
+  const isValid = appName.every((v) =>
+    checkVersion ? versionPattern.test(v) : vendorAppPattern.test(v),
+  );
+  return isValid;
+};

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { FileDown, FileUp, LoaderCircle, Search } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { useToast } from "@/components/ui/use-toast";
+import { checkFormatAppName } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { theme, toggle } = useTheme();
@@ -161,8 +162,21 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <TagInput
               label="Apps"
+              description="O padrão deve ser {vendor}.{app}, ex: vtex.app-custom, vtex.app-another"
               values={apps}
-              onChange={setApps}
+              onChange={(value) => {
+                const isValid = checkFormatAppName(value);
+                if (!isValid) {
+                  toast({
+                    title: "Formato inválido",
+                    description:
+                      "Cada app deve seguir o formato vendor.app, ex: vtex.app-custom",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setApps(value);
+              }}
               placeholder="Digite um app e pressione Enter. ex: vtex.app-custom"
             />
           </div>

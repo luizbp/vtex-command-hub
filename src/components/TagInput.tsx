@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
@@ -8,6 +8,7 @@ interface TagInputProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   label?: string;
+  description?: string;
   suggestions?: string[];
   fillOnSelect?: boolean;
   suffixWhenFilling?: string;
@@ -19,6 +20,7 @@ export function TagInput({
   onChange,
   placeholder,
   label,
+  description,
   suggestions = [],
   fillOnSelect = false,
   suffixWhenFilling = "",
@@ -26,6 +28,8 @@ export function TagInput({
 }: TagInputProps) {
   const [input, setInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const isEditing = useRef(false);
 
   const addTag = (tag?: string) => {
     const trimmed = (tag ?? input).trim();
@@ -34,20 +38,51 @@ export function TagInput({
     }
     setInput("");
     setShowSuggestions(false);
+    isEditing.current = false;
   };
 
   const fillInput = (tag?: string) => {
     setInput((tag ?? input) + suffixWhenFilling);
+    setShowSuggestions(false);
+    isEditing.current = true;
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (
+      e.key === "ArrowDown" &&
+      showSuggestions &&
+      filteredSuggestions.length > 0
+    ) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1) % filteredSuggestions.length);
+      return;
+    }
+    if (
+      e.key === "ArrowUp" &&
+      showSuggestions &&
+      filteredSuggestions.length > 0
+    ) {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev <= 0 ? filteredSuggestions.length - 1 : prev - 1,
+      );
+      return;
+    }
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      if (filteredSuggestions.length > 0 && showSuggestions) {
-        addTag(filteredSuggestions[0]);
+      if (filteredSuggestions.length > 0 && highlightedIndex >= 0) {
+        if (fillOnSelect && showSuggestions)
+          fillInput(filteredSuggestions[highlightedIndex]);
+        else addTag(filteredSuggestions[highlightedIndex]);
+        setHighlightedIndex(-1);
+      } else if (filteredSuggestions.length > 0) {
+        if (fillOnSelect && showSuggestions) fillInput(filteredSuggestions[0]);
+        else addTag(filteredSuggestions[0]);
       } else {
-        addTag();
+        if (fillOnSelect && showSuggestions) fillInput(input);
+        else addTag();
       }
+      return;
     }
     if (e.key === "Backspace" && !input && values.length > 0) {
       onChange(values.slice(0, -1));
@@ -74,9 +109,17 @@ export function TagInput({
     )
     .slice(0, 30);
 
+  // Reset highlight when suggestions/input change
+  useEffect(() => {
+    setHighlightedIndex(filteredSuggestions.length > 0 ? 0 : -1);
+  }, [showSuggestions, input, filteredSuggestions.length]);
+
   return (
     <div className="space-y-2">
       {label && <label className="text-sm font-medium">{label}</label>}
+      {description && (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      )}
       <div className="flex flex-wrap gap-1.5 rounded-md border border-input bg-background p-2 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background relative">
         {values.map((tag, i) => (
           <Badge key={i} variant="secondary" className="gap-1 pr-1">
@@ -96,7 +139,9 @@ export function TagInput({
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
-              setShowSuggestions(true);
+              if (isEditing.current === false || !input) {
+                setShowSuggestions(true);
+              }
             }}
             disabled={disabled}
             onKeyDown={handleKeyDown}
@@ -111,8 +156,13 @@ export function TagInput({
               {filteredSuggestions.map((s, idx) => (
                 <li
                   key={s}
-                  className="px-2 py-1 cursor-pointer hover:bg-muted"
-                  onMouseDown={() => (fillOnSelect ? fillInput(s) : addTag(s))}
+                  className={`px-2 py-1 cursor-pointer ${highlightedIndex === idx ? "bg-muted" : "hover:bg-muted"}`}
+                  onMouseDown={() =>
+                    fillOnSelect || (fillOnSelect && showSuggestions)
+                      ? fillInput(s)
+                      : addTag(s)
+                  }
+                  onMouseEnter={() => setHighlightedIndex(idx)}
                 >
                   {s}
                 </li>

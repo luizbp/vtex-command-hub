@@ -24,7 +24,9 @@ if (!isDev) {
 
   try {
     autoUpdater.setFeedURL({ url: feed });
-  } catch (e) {}
+  } catch (e) {
+    logToFile(app, "[autoUpdater] Error setting feed URL:", e);
+  }
 
   setInterval(() => {
     autoUpdater.checkForUpdates();
@@ -139,6 +141,20 @@ app.whenReady().then(() => {
   win.on("blur", () => {
     globalShortcut.unregister("CommandOrControl+Shift+R");
   });
+});
+
+app.on("ready", () => {
+  if (!isDev) {
+    try {
+      autoUpdater.checkForUpdates();
+    } catch (e) {
+      logToFile(
+        app,
+        "[autoUpdater] Error checking for updates on app ready:",
+        e,
+      );
+    }
+  }
 });
 
 // Quit when all windows are closed.

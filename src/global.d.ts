@@ -17,23 +17,23 @@ declare global {
         account: string;
       }) => Promise<{ success: boolean; log: string }>;
       createWorkspace: (props: {
-        account: string;
         workspace: string;
+        typeWorkspace: "development" | "production";
+        forceMaster?: boolean;
       }) => Promise<{ success: boolean; log: string }>;
       uninstallApps: (props: {
-        account: string;
         workspace: string;
         appsToUninstall: string[];
         forceInstallation?: boolean;
         forceMaster?: boolean;
       }) => Promise<{ success: boolean; logs: string[] }>;
       installApps: (props: {
-        account: string;
         workspace: string;
         appsToInstall: string[];
         forceInstallation?: boolean;
         forceMaster?: boolean;
       }) => Promise<{ success: boolean; logs: string[] }>;
+      checkForUpdates: () => void;
     };
   }
 }

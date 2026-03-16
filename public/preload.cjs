@@ -9,6 +9,7 @@ const electronAPI = {
   createWorkspace: (props) => ipcRenderer.invoke("createWorkspace", props),
   uninstallApps: (props) => ipcRenderer.invoke("uninstallApps", props),
   installApps: (props) => ipcRenderer.invoke("installApps", props),
+  checkForUpdates: () => ipcRenderer.invoke("checkForUpdates"),
 };
 
 // Register the API with the contextBridge

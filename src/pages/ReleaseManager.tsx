@@ -9,6 +9,13 @@ import type { ReleaseAccountStatus } from "@/utils/cliService";
 import { checkFormatAppName, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/use-settings";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const statusColors: Record<ReleaseAccountStatus["status"], string> = {
   pending: "bg-muted text-muted-foreground",
@@ -34,6 +41,9 @@ export default function ReleaseManager() {
   const [appsToUninstall, setAppsToUninstall] = useState<string[]>([]);
   const [forceMaster, setForceMaster] = useState(false);
   const [forceInstallation, setForceInstallation] = useState(false);
+  const [typeWorkspace, setTypeWorkspace] = useState<
+    "development" | "production"
+  >("development");
   const [loading, setLoading] = useState(false);
   const [statuses, setStatuses] = useState<
     Record<string, ReleaseAccountStatus>
@@ -159,8 +169,8 @@ export default function ReleaseManager() {
       addHour: true,
     });
     const wsRes = await window.electronAPI?.createWorkspace({
-      account,
       workspace: workspace.trim(),
+      typeWorkspace,
     });
     handleLogs({
       logs: logs,
@@ -202,7 +212,6 @@ export default function ReleaseManager() {
         addHour: true,
       });
       const uninstallRes = await window.electronAPI?.uninstallApps({
-        account,
         workspace: workspace.trim(),
         appsToUninstall,
         forceInstallation,
@@ -252,7 +261,6 @@ export default function ReleaseManager() {
       });
 
       const installRes = await window.electronAPI?.installApps({
-        account,
         workspace: workspace.trim(),
         appsToInstall,
         forceInstallation,
@@ -340,14 +348,55 @@ export default function ReleaseManager() {
           suggestions={savedAccounts}
           disabled={loading}
         />
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Nome da Workspace</label>
-          <Input
-            placeholder="release-v2.0"
-            value={workspace}
-            onChange={(e) => setWorkspace(e.target.value)}
-            disabled={loading}
-          />
+        <div className=" grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Nome da Workspace</label>
+            <Input
+              className="h-11"
+              placeholder="release-v2.0"
+              value={forceMaster ? "master" : workspace}
+              onChange={(e) => setWorkspace(e.target.value)}
+              disabled={loading || forceMaster}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium mb-2">
+              Tipo de workspace
+            </label>
+            <Select
+              disabled={loading || forceMaster}
+              value={typeWorkspace}
+              onValueChange={(e: "development" | "production") =>
+                setTypeWorkspace(e)
+              }
+            >
+              <SelectTrigger className="w-full h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="development">Desenvolvimento</SelectItem>
+                <SelectItem value="production">Produção</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={forceMaster}
+              onCheckedChange={(v) => {
+                setForceMaster(!!v);
+                if (v) {
+                  setWorkspace("master");
+                  setTypeWorkspace("production");
+                  return;
+                }
+
+                setWorkspace("");
+                setTypeWorkspace("development");
+              }}
+              disabled={loading}
+            />
+            Rodar em produção (workspace "master")
+          </label>
         </div>
         <TagInput
           label="Apps para Instalar (opcional)"
@@ -397,15 +446,7 @@ export default function ReleaseManager() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-6">
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={forceMaster}
-            onCheckedChange={(v) => setForceMaster(!!v)}
-            disabled={loading}
-          />
-          Forçar uso na Master
-        </label>
+      <div className="flex  flex-col gap-4">
         <label className="flex items-center gap-2 text-sm">
           <Checkbox
             checked={forceInstallation}

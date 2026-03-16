@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Add a label instructing users to enter “{vendor}.{app}” and a regular expression to validate the input before adding it
 - Allow the use of the arrow keys to select options from dropdown menus
+- When you check “Force use on Master,” the workspace input is locked and the value is set to “master.”
+- A “Check for Updates” button has been added to the settings page
+- Adding type workspace selection
 
 ## [0.2.0] 2026-03-12
 

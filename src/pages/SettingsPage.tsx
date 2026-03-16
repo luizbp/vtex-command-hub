@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<string[]>([]);
   const [apps, setApps] = useState<string[]>([]);
+  const [checkingUpdate, setCheckingUpdates] = useState(false);
 
   const getSettingsLocalStorage = useCallback(() => {
     const settings = getSettings();
@@ -127,6 +128,22 @@ export default function SettingsPage() {
         <Button variant="secondary" onClick={exportSettings}>
           <FileUp />
           Exportar Configurações
+        </Button>
+        <Button
+          variant="outline"
+          disabled={checkingUpdate}
+          onClick={() => {
+            setCheckingUpdates(true);
+            window.electronAPI?.checkForUpdates();
+
+            setTimeout(() => {
+              setCheckingUpdates(false);
+            }, 25000);
+          }}
+        >
+          <Search />
+          Buscar Atualizações{" "}
+          {checkingUpdate && <LoaderCircle className="animate-spin" />}
         </Button>
       </div>
       <Card>

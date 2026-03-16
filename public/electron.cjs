@@ -126,6 +126,21 @@ app.whenReady().then(() => {
   ipcMain.handle("installApps", async (_, ...props) =>
     cmdScripts.installApps(...props),
   );
+  ipcMain.handle("checkForUpdates", async (_, ...props) => {
+    if (!isDev) {
+      try {
+        autoUpdater.checkForUpdates();
+      } catch (e) {
+        logToFile(
+          app,
+          "[autoUpdater] Error checking for updates on app ready:",
+          e,
+        );
+
+        throw new Error(e instanceof Error ? e.message : String(e));
+      }
+    }
+  });
   ipcMain.on("reload-page", () => {
     win.reload();
   });

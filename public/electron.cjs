@@ -27,10 +27,6 @@ if (!isDev) {
   } catch (e) {
     logToFile(app, "[autoUpdater] Error setting feed URL:", e);
   }
-
-  setInterval(() => {
-    autoUpdater.checkForUpdates();
-  }, 60000 * 10); // Check every 10 minutes
 }
 
 function createWindow() {

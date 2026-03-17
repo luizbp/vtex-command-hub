@@ -43,7 +43,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PastExecutionViewer } from "@/components/PastExecutionViewer";
 import { TagInput } from "@/components/TagInput";
-import { AppVersions, transformVersions } from "@/lib/utils";
+import { AppVersions, getVersionColor, transformVersions } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/use-settings";
 import { Input } from "@/components/ui/input";
@@ -221,47 +221,70 @@ export default function VersionChecker() {
         {loading && <Progress value={progress} className="w-48" />}
       </div>
 
-      {/* Contas com erro */}
-      <ErrorAccountsList errorAccounts={errorAccounts} />
-
       {/* Resultado da execução atual */}
       {results.length > 0 && (
-        <Card>
+        <Card className="mt-4">
           <CardHeader>
-            <CardTitle className="text-base">Resultado</CardTitle>
+            <div className="flex gap-3 items-center justify-between w-full">
+              <CardTitle className="text-base">Resultados</CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="sticky left-0 bg-card z-10">
-                    Accounts
+                    Apps
                   </TableHead>
-                  {results.map((r) => (
-                    <TableHead key={r.app} className="whitespace-nowrap">
-                      {r.app}
+                  {accounts.map((account: string) => (
+                    <TableHead key={account} className="whitespace-nowrap">
+                      {account}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {accounts.map((account) => (
-                  <TableRow key={account}>
+                {results.map((r: any) => (
+                  <TableRow key={r.app}>
                     <TableCell className="sticky left-0 bg-card z-10 font-medium">
-                      {account}
+                      {r.app}
                     </TableCell>
-                    {results.map((r) => (
-                      <TableCell key={r.app} className="whitespace-nowrap">
-                        {r.accountVersions[account] &&
-                        r.accountVersions[account] !== "Não instalado" ? (
-                          <span className="font-mono text-sm">
-                            {r.accountVersions[account]}
-                          </span>
-                        ) : (
-                          <Badge variant="secondary">Não instalado</Badge>
-                        )}
-                      </TableCell>
-                    ))}
+                    {accounts.map((account: string) => {
+                      const version = r.accountVersions[account];
+                      if (version === "Error") {
+                        return (
+                          <TableCell
+                            key={account}
+                            className="whitespace-nowrap"
+                          >
+                            <Badge variant="destructive">Error</Badge>
+                          </TableCell>
+                        );
+                      }
+                      if (!version || version === "Não instalado") {
+                        return (
+                          <TableCell
+                            key={account}
+                            className="whitespace-nowrap"
+                          >
+                            <Badge variant="secondary">Não instalado</Badge>
+                          </TableCell>
+                        );
+                      }
+                      // Badge color custom
+                      return (
+                        <TableCell key={account} className="whitespace-nowrap">
+                          <Badge
+                            style={{
+                              backgroundColor: getVersionColor(version),
+                              color: "#fff",
+                            }}
+                          >
+                            <span className="font-mono text-sm">{version}</span>
+                          </Badge>
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
@@ -269,6 +292,9 @@ export default function VersionChecker() {
           </CardContent>
         </Card>
       )}
+
+      {/* Contas com erro */}
+      <ErrorAccountsList errorAccounts={errorAccounts} />
 
       {/* Histórico de execuções com filtros e paginação */}
       {logs.length > 0 && (

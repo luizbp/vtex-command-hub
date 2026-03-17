@@ -28,12 +28,23 @@ export function transformVersions(data: VersionResult[]): AppVersions[] {
   });
 
   // 3. (Opcional) Garantir que contas que não possuem o app recebam "Não instalado"
-  const allAccounts = data.map((d) => d.account);
+  const allAccounts = data.map((d) => {
+    return {
+      account: d.account,
+      isError: !!d.error,
+    };
+  });
 
   return Object.entries(appMap).map(([appName, accountVersions]) => {
     const completeAccountVersions: Record<string, string> = {};
 
-    allAccounts.forEach((acc) => {
+    allAccounts.forEach(({ account: acc, isError }) => {
+      if (isError) {
+        completeAccountVersions[acc] = "Error";
+
+        return;
+      }
+
       completeAccountVersions[acc] = accountVersions[acc] || "Não instalado";
     });
 
@@ -52,4 +63,18 @@ export const checkFormatAppName = (appName: string[], checkVersion = false) => {
     checkVersion ? versionPattern.test(v) : vendorAppPattern.test(v),
   );
   return isValid;
+};
+
+export const getVersionColor = (version: string) => {
+  if (!version || version === "Não instalado" || version === "Error")
+    return "secondary";
+  // Gera hash simples da versão
+  let hash = 0;
+  for (let i = 0; i < version.length; i++) {
+    hash = version.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  // Gera cor HSL baseada no hash
+  const hue = Math.abs(hash) % 360;
+  // Saturação e luminosidade ajustadas para fundo escuro
+  return `hsl(${hue}, 80%, 30%)`;
 };

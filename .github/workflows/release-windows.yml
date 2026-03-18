@@ -1,9 +1,10 @@
 name: Release Windows App
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+    types: [closed]
 
 jobs:
   build-and-release:
@@ -24,6 +25,9 @@ jobs:
 
       - name: Build Electron App
         run: yarn electron:package:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get version from package.json
         id: get_version

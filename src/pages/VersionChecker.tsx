@@ -1,34 +1,5 @@
-// Componente para exibir contas com erro
-function ErrorAccountsList({
-  errorAccounts,
-}: {
-  errorAccounts: { account: string; error: string }[];
-}) {
-  if (!errorAccounts?.length) return <></>;
-  return (
-    <>
-      <Card className="border-destructive border-2">
-        <CardHeader>
-          <CardTitle className="text-base text-destructive">
-            Contas com erro
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-disc pl-4 space-y-1">
-            {errorAccounts.map((item, idx) => (
-              <li key={item.account + idx}>
-                <span className="font-semibold">{item.account}:</span>{" "}
-                {item.error}
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-    </>
-  );
-}
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -47,6 +18,33 @@ import { AppVersions, getVersionColor, transformVersions } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/use-settings";
 import { Input } from "@/components/ui/input";
+
+function ErrorAccountsList({
+  errorAccounts,
+}: {
+  errorAccounts: { account: string; error: string }[];
+}) {
+  if (!errorAccounts?.length) return null;
+  return (
+    <Card className="border-destructive border-2">
+      <CardHeader>
+        <CardTitle className="text-base text-destructive">
+          Contas com erro
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="list-disc pl-4 space-y-1">
+          {errorAccounts.map((item, idx) => (
+            <li key={item.account + idx}>
+              <span className="font-semibold">{item.account}:</span>{" "}
+              {item.error}
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function VersionChecker() {
   const { toast } = useToast();
@@ -77,29 +75,29 @@ export default function VersionChecker() {
   // Filtra logs conforme filtros
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
-      let match = true;
-      if (filterDate) {
-        match = match && log.date.startsWith(filterDate);
-      }
-      if (filterApp) {
-        match =
-          match &&
-          log.data.apps?.some((a: string) =>
-            a.toLowerCase().includes(filterApp.toLowerCase()),
-          );
-      }
-      if (filterAccount) {
-        match =
-          match &&
-          log.data.accounts?.some((a: string) =>
-            a.toLowerCase().includes(filterAccount.toLowerCase()),
-          );
-      }
-      return match;
+      if (filterDate && !log.date.startsWith(filterDate)) return false;
+      if (
+        filterApp &&
+        !log.data.apps?.some((a: string) =>
+          a.toLowerCase().includes(filterApp.toLowerCase()),
+        )
+      )
+        return false;
+      if (
+        filterAccount &&
+        !log.data.accounts?.some((a: string) =>
+          a.toLowerCase().includes(filterAccount.toLowerCase()),
+        )
+      )
+        return false;
+      return true;
     });
   }, [logs, filterDate, filterApp, filterAccount]);
 
-  const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE) || 1;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredLogs.length / LOGS_PER_PAGE),
+  );
   const paginatedLogs = useMemo(() => {
     const start = (logPage - 1) * LOGS_PER_PAGE;
     return filteredLogs
@@ -108,14 +106,14 @@ export default function VersionChecker() {
       .slice(start, start + LOGS_PER_PAGE);
   }, [filteredLogs, logPage]);
 
-  const handleCheck = async () => {
+  const handleCheck = useCallback(async () => {
     if (!accounts.length || !apps.length) return;
     setLoading(true);
     setResults([]);
     setProgress(0);
     setErrorAccounts([]);
 
-    const data = [];
+    const data: any[] = [];
     const errors: { account: string; error: string }[] = [];
 
     for (let done = 0; done < accounts.length; done++) {
@@ -144,7 +142,6 @@ export default function VersionChecker() {
         variant: "destructive",
       });
       setLoading(false);
-
       if (data.length === errors.length) return;
     } else {
       toast({
@@ -166,13 +163,17 @@ export default function VersionChecker() {
       },
     });
     setSettings(getSettings());
-  };
+  }, [accounts, apps, toast, addLog, getSettings]);
 
   // Deleta um log pelo date
-  const handleDeleteLog = (date: string) => {
-    deleteLog(date);
-    setSettings(getSettings());
-  };
+
+  const handleDeleteLog = useCallback(
+    (date: string) => {
+      deleteLog(date);
+      setSettings(getSettings());
+    },
+    [deleteLog, getSettings],
+  );
 
   useEffect(() => {
     if (selectedLog && execCardRef.current) {

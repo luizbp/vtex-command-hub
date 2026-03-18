@@ -149,7 +149,11 @@ export function TagInput({
             placeholder={values.length === 0 ? placeholder : ""}
             className="h-7 flex-1 border-0 p-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             autoComplete="off"
-            onFocus={() => setShowSuggestions(true)}
+            onFocus={() => {
+              if (isEditing.current === false || !input) {
+                setShowSuggestions(true);
+              }
+            }}
           />
           {showSuggestions && filteredSuggestions.length > 0 && (
             <ul className="absolute z-10 left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-auto text-sm">

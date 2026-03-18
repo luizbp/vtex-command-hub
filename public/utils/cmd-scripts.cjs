@@ -2,216 +2,194 @@ const { exec } = require("child_process");
 const util = require("util");
 const { getMessage, retryFunction } = require("./utils.cjs");
 
-// Transforma o exec em uma versão que aceita async/await
 const execPromise = util.promisify(exec);
 
 /**
- * Verifica as versões de apps instalados em múltiplas contas VTEX.
+ * Utilitário para executar comandos VTEX e tratar erros.
+ * @param {string} command - Comando a ser executado.
+ * @returns {Promise<string>} - Saída do comando.
+ */
+async function runVtexCommand(command) {
+  console.log("TCL: runVtexCommand -> command", command);
+  try {
+    const { stdout } = await execPromise(command);
+    return stdout;
+  } catch (error) {
+    throw new Error(getMessage(error));
+  }
+}
+
+/**
+ * Busca versões de apps instalados em uma conta VTEX.
  * @param {Object} params
- * @param {string} params.accounts - Array de nomes das contas VTEX a serem verificadas.
- * @param {string[]} params.apps - Array de nomes dos apps cujas versões serão buscadas.
+ * @param {string} params.account - Nome da conta VTEX.
+ * @param {string[]} params.apps - Lista de apps a verificar.
+ * @returns {Promise<Object[]>}
  */
 async function versionChecker({ account, apps }) {
+  console.log("TCL: versionChecker -> account", account);
+  console.log("TCL: versionChecker -> apps", apps);
+
   const results = [];
-
   try {
-    // 1. Executa o comando de switch (que geralmente lista os apps instalados)
-    // Nota: Verifique se o comando 'vtex switch' realmente retorna a lista.
-    // Caso não retorne, você pode precisar concatenar com 'vtex ls'.
-    const command = `vtex switch ${account} && vtex ls`;
-    const { stdout } = await execPromise(command);
-
-    if (!stdout) {
-      console.error(`Erro na conta ${account}: ${stderr}`);
-      results.push({
-        account: account,
-        error: "Erro ao executar o comando",
-      });
-      return results;
-    }
-
-    const versionsFound = {};
-
-    // 2. Itera sobre os apps que queremos buscar
-    apps.forEach((app) => {
-      // Regex dinâmica:
-      // Procura pelo nome do app + espaços + captura a versão (dígitos.dígitos.dígitos)
-      // O flag 'm' é para busca multi-line
-      // const regex = new RegExp(`${app}\\s+([0-9]+\\.[0-9]+\\.[0-9]+)`, "m");
-      const regex = new RegExp(`^.*${app}\\s+([\\d.]+)`, "m");
-      const match = stdout.match(regex);
-
-      if (match) {
-        // match[1] contém o grupo de captura da versão
-        versionsFound[app] = match[1];
-      } else {
-        versionsFound[app] = "Não instalado";
-      }
-    });
-
-    results.push({
-      account: account,
-      versions: versionsFound,
-    });
+    const stdout = await runVtexCommand(`vtex switch ${account} && vtex ls`);
+    const versionsFound = Object.fromEntries(
+      apps.map((app) => {
+        const regex = new RegExp(`^.*${app}\s+([\d.]+)`, "m");
+        const match = stdout.match(regex);
+        return [app, match ? match[1] : "Não instalado"];
+      }),
+    );
+    results.push({ account, versions: versionsFound });
   } catch (error) {
-    console.error(`Falha ao processar conta ${account}:`, getMessage(error));
-    results.push({
-      account: account,
-      error: "Falha na execução do comando: " + getMessage(error),
-    });
+    results.push({ account, error: error.message });
   }
-
   return results;
 }
+
 /**
- * @param {string} account - Nome da conta VTEX a ser atualizada.
+ * Atualiza uma conta VTEX.
+ * @param {Object} params
+ * @param {string} params.account
+ * @returns {Promise<Object>}
  */
 async function updateAccount({ account }) {
+  console.log("TCL: updateAccount -> account", account);
   try {
-    // 1. Executa o comando de switch (que geralmente lista os apps instalados)
-    // Nota: Verifique se o comando 'vtex switch' realmente retorna a lista.
-    // Caso não retorne, você pode precisar concatenar com 'vtex ls'.
-    const command = `vtex switch ${account} && yes | vtex update`;
-    const { stdout } = await execPromise(command);
-
-    if (!stdout) {
-      console.error(`Erro na conta ${account}: ${stderr}`);
-      return {
-        account: account,
-        message: `Erro ao executar o comando: ${stderr}`,
-        status: "error",
-      };
-    }
-
+    await runVtexCommand(`vtex switch ${account} && yes | vtex update`);
     return {
-      account: account,
+      account,
       message: "Conta atualizada com sucesso",
       status: "success",
     };
   } catch (error) {
-    console.error(`Falha ao processar conta ${account}:`, getMessage(error));
+    return { account, message: error.message, status: "error" };
+  }
+}
+
+/**
+ * Checa se operação pode ser realizada na master.
+ * @param {boolean} forceMaster
+ * @param {string} workspace
+ * @returns {Promise<boolean>}
+ */
+async function checkMasterRule(forceMaster, workspace) {
+  console.log("TCL: checkMasterRule -> forceMaster", forceMaster);
+  console.log("TCL: checkMasterRule -> workspace", workspace);
+  if (forceMaster) return false;
+  if (workspace.toLowerCase() === "master") return true;
+  try {
+    const whoamiOut = await runVtexCommand("vtex whoami");
+    console.log("TCL: checkMasterRule -> whoamiOut", whoamiOut);
+    const workspaceStatusOut = await runVtexCommand("vtex workspace status");
+    console.log(
+      "TCL: checkMasterRule -> workspaceStatusOut",
+      workspaceStatusOut,
+    );
+    return (
+      workspaceStatusOut.toLowerCase().includes("master") ||
+      whoamiOut.toLowerCase().includes("master")
+    );
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Adiciona timestamp ao log.
+ * @param {string} log
+ * @returns {string}
+ */
+function addTimeToLogs(log) {
+  const now = new Date();
+  const time = now.toLocaleTimeString("pt-BR", { hour12: false });
+  return `[${time}] ${log}`;
+}
+
+/**
+ * Troca de conta VTEX.
+ * @param {Object} params
+ * @param {string} params.account
+ * @returns {Promise<Object>}
+ */
+async function switchAccount({ account }) {
+  try {
+    await runVtexCommand(`vtex switch ${account}`);
     return {
-      account: account,
-      message: `Falha na execução do comando: ${getMessage(error)}`,
-      status: "error",
+      success: true,
+      log: `Trocado para a conta ${account} com sucesso ✓`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      log: `ERRO ao trocar para a conta ${account}: ${error.message}`,
     };
   }
 }
 
 /**
- * Checa se a operação pode ser realizada na master, considerando as opções de força.
- * @param {boolean} forceMaster - Permite uso da master mesmo que o workspace seja master.
- * @param {string} workspace - Nome do workspace atual.
- * @returns {Promise<boolean>} - Retorna true se a operação pode prosseguir, false se deve ser bloqueada.
+ * Cria workspace VTEX.
+ * @param {Object} params
+ * @param {string} params.workspace
+ * @param {string} params.typeWorkspace
+ * @param {boolean} params.forceMaster
+ * @returns {Promise<Object>}
  */
-async function checkMasterRule(forceMaster, workspace) {
-  if (forceMaster) return false;
-
-  if (workspace.toLowerCase() === "master") {
-    return true;
-  }
-
-  try {
-    const { stdout: whoamiOut } = await execPromise("vtex whoami");
-    const { stdout: workspaceStatusOut } = await execPromise(
-      "vtex workspace status",
-    );
-    if (
-      (workspaceStatusOut &&
-        workspaceStatusOut.toLowerCase().includes("master")) ||
-      (whoamiOut && whoamiOut.toLowerCase().includes("master"))
-    ) {
-      return true;
-    }
-  } catch (err) {
-    return true;
-  }
-
-  return false;
-}
-
-function addTimeToLogs(log) {
-  const currentDate = new Date();
-  const currentHour = `${currentDate
-    .getHours()
-    .toString()
-    .padStart(2, "0")}:${currentDate
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}:${currentDate.getSeconds().toString().padStart(2, "0")}`;
-
-  return `[${currentHour}] ${log}`;
-}
-
-// Etapa 1: Switch para a conta
-async function switchAccount({ account }) {
-  try {
-    await execPromise(`vtex switch ${account}`);
-    return { success: true, log: `Trocado para a conta ${account}` };
-  } catch (error) {
-    return {
-      success: false,
-      log: `ERRO ao trocar para a conta ${account}: ${getMessage(error)}`,
-    };
-  }
-}
-
-// Etapa 2: Cria workspace
 async function createWorkspace({ workspace, typeWorkspace, forceMaster }) {
-  try {
-    const responseErrorMaster = {
+  console.log("TCL: createWorkspace -> forceMaster", forceMaster);
+  console.log("TCL: createWorkspace -> typeWorkspace", typeWorkspace);
+  console.log("TCL: createWorkspace -> workspace", workspace);
+  if (!forceMaster && workspace.toLowerCase() === "master") {
+    return {
       success: false,
       log: addTimeToLogs(
         'ERRO: Proibido rodar na master. Ative "Rodar em produção".',
       ),
     };
-    if (!forceMaster && workspace.toLowerCase() === "master") {
-      return responseErrorMaster;
-    }
-
-    const masterRule = await checkMasterRule(forceMaster, workspace);
-
-    if (masterRule) {
-      return responseErrorMaster;
-    }
-
-    const isWsProduction =
-      typeWorkspace === "production" && workspace.toLowerCase() !== "master";
-    const command = isWsProduction
-      ? `echo yes | vtex use ${workspace} --production`
-      : `echo yes | vtex use ${workspace}`;
-    await execPromise(command);
+  }
+  const isProduction =
+    typeWorkspace === "production" && workspace.toLowerCase() !== "master";
+  const command = `echo yes | vtex use ${workspace}${isProduction ? " --production" : ""}`;
+  console.log("TCL: createWorkspace -> isProduction", isProduction);
+  try {
+    await runVtexCommand(command);
     return {
       success: true,
       log: addTimeToLogs(
-        `Workspace "${workspace}" (${typeWorkspace}) criado com sucesso.`,
+        `Workspace "${workspace}" (${typeWorkspace}) selecionada com sucesso.`,
       ),
     };
   } catch (error) {
     return {
       success: false,
       log: addTimeToLogs(
-        `ERRO ao criar workspace "${workspace}": ${getMessage(error)}`,
+        `ERRO ao criar workspace "${workspace}": ${error.message}`,
       ),
     };
   }
 }
 
-// Etapa 3: Desinstala apps
+/**
+ * Desinstala apps VTEX.
+ * @param {Object} params
+ * @param {string} params.workspace
+ * @param {string[]} params.appsToUninstall
+ * @param {boolean} params.forceInstallation
+ * @param {boolean} params.forceMaster
+ * @returns {Promise<Object>}
+ */
 async function uninstallApps({
   workspace,
   appsToUninstall = [],
   forceInstallation = true,
   forceMaster = false,
 }) {
+  console.log("TCL: uninstallApps -> workspace", workspace);
+  console.log("TCL: uninstallApps -> appsToUninstall", appsToUninstall);
+  console.log("TCL: uninstallApps -> forceInstallation", forceInstallation);
+  console.log("TCL: uninstallApps -> forceMaster", forceMaster);
   const logs = [];
-  let success = true;
-
-  // Proíbe rodar na master sem permissão
-  // Checa se está na workspace master antes de instalar/desinstalar apps
-  const masterRule = await checkMasterRule(forceMaster, workspace);
-
-  if (masterRule) {
+  if (await checkMasterRule(forceMaster, workspace)) {
     logs.push(
       addTimeToLogs(
         'ERRO: Proibido rodar na master. Ative "Rodar em produção".',
@@ -219,30 +197,28 @@ async function uninstallApps({
     );
     return { success: false, logs };
   }
-
+  let success = true;
   for (const app of appsToUninstall) {
     try {
       await retryFunction(() =>
-        execPromise(
+        runVtexCommand(
           `echo yes | vtex uninstall ${app} ${forceInstallation ? "--force" : ""}`,
         ),
       );
-      logs.push(addTimeToLogs(`  ↳ ${app} desinstalado`));
+      logs.push(addTimeToLogs(`  ↳ ${app} desinstalado com sucesso ✓`));
     } catch (err) {
-      const msg = getMessage(err);
+      const msg = err.message.toLowerCase();
       if (
-        !msg.toLowerCase().includes("404: not found") &&
-        !msg.toLowerCase().includes("404: não encontrado") &&
-        stopOnError
+        !msg.includes("404: not found") &&
+        !msg.includes("404: não encontrado")
       ) {
         logs.push(
           addTimeToLogs(
-            `  ↳ ${app} FALHOU na desinstalação - ${getMessage(err)} ✗`,
+            `  ↳ ${app} FALHOU na desinstalação - ${err.message} ✗`,
           ),
         );
         success = false;
       }
-
       logs.push(
         addTimeToLogs(`  ↳ ${app} não encontrado para desinstalar, pulando...`),
       );
@@ -251,41 +227,46 @@ async function uninstallApps({
   return { success, logs };
 }
 
-// Etapa 4: Instala apps
+/**
+ * Instala apps VTEX.
+ * @param {Object} params
+ * @param {string} params.workspace
+ * @param {string[]} params.appsToInstall
+ * @param {boolean} params.forceInstallation
+ * @param {boolean} params.forceMaster
+ * @returns {Promise<Object>}
+ */
 async function installApps({
   workspace,
   appsToInstall = [],
   forceInstallation = true,
   forceMaster = false,
 }) {
+  console.log("TCL: installApps -> workspace", workspace);
+  console.log("TCL: installApps -> appsToInstall", appsToInstall);
+  console.log("TCL: installApps -> forceInstallation", forceInstallation);
+  console.log("TCL: installApps -> forceMaster", forceMaster);
   const logs = [];
-  let success = true;
-
-  // Proíbe rodar na master sem permissão
-  // Checa se está na workspace master antes de instalar/desinstalar apps
-  const masterRule = await checkMasterRule(forceMaster, workspace);
-
-  if (masterRule) {
+  if (await checkMasterRule(forceMaster, workspace)) {
     logs.push('ERRO: Proibido rodar na master. Ative "Rodar em produção".');
     return { success: false, logs };
   }
-
+  let success = true;
   for (const app of appsToInstall) {
     try {
       await retryFunction(() =>
-        execPromise(
+        runVtexCommand(
           `echo yes | vtex install ${app} ${forceInstallation ? "--force" : ""}`,
         ),
       );
       logs.push(addTimeToLogs(`  ↳ ${app} instalado com sucesso ✓`));
     } catch (err) {
       logs.push(
-        addTimeToLogs(`  ↳ ${app} FALHOU na instalação - ${getMessage(err)} ✗`),
+        addTimeToLogs(`  ↳ ${app} FALHOU na instalação - ${err.message} ✗`),
       );
       success = false;
     }
   }
-
   return { success, logs };
 }
 

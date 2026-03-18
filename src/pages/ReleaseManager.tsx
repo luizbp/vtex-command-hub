@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,6 +33,21 @@ const statusLabels: Record<ReleaseAccountStatus["status"], string> = {
   stopped: "Interrompido",
 };
 
+function getCurrentHour() {
+  const d = new Date();
+  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
+}
+
+function appendLog(logs: string[], log: string | string[], addHour = false) {
+  const hour = getCurrentHour();
+  if (!log) return;
+  if (Array.isArray(log)) {
+    logs.push(...log.map((l) => `${addHour ? `[${hour}] ` : ""}${l}`));
+  } else {
+    logs.push(`${addHour ? `[${hour}] ` : ""}${log}`);
+  }
+}
+
 export default function ReleaseManager() {
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<string[]>([]);
@@ -52,281 +67,219 @@ export default function ReleaseManager() {
   const { getSettings } = useSettings();
   const { accounts: savedAccounts, apps: savedApps } = getSettings();
 
-  const handleStop = ({
-    logs,
-    account,
-  }: {
-    logs: string[];
-    account: string;
-  }) => {
-    handleLogs({
+  const handleStop = useCallback(
+    ({ logs, account }: { logs: string[]; account: string }) => {
+      handleLogs({
+        logs,
+        log: "Processo interrompido pelo usuário.",
+        status: "stopped",
+        account,
+        addHour: true,
+      });
+    },
+    [],
+  );
+
+  const handleLogs = useCallback(
+    ({
       logs,
-      log: "Processo interrompido pelo usuário.",
-      status: "stopped",
+      log,
+      status,
       account,
-      addHour: true,
-    });
-  };
-
-  const handleLogs = ({
-    logs,
-    log,
-    status,
-    account,
-    addHour = false,
-  }: {
-    logs: string[];
-    log?: string | string[];
-    status: ReleaseAccountStatus["status"];
-    account: string;
-    addHour?: boolean;
-  }) => {
-    const currentDate = new Date();
-    const currentHour = `${currentDate.getHours().toString().padStart(2, "0")}:${currentDate.getMinutes().toString().padStart(2, "0")}:${currentDate.getSeconds().toString().padStart(2, "0")}`;
-    if (log) {
-      if (Array.isArray(log)) {
-        logs.push(
-          ...log.map((l) => `${addHour ? `[${currentHour}] ` : ""}${l}`),
-        );
-      } else if (log) {
-        logs.push(`${addHour ? `[${currentHour}] ` : ""}${log}`);
-      }
-    }
-
-    setStatuses((prev) => ({
-      ...prev,
-      [account]: { account, status, logs: [...logs] },
-    }));
-  };
+      addHour = false,
+    }: {
+      logs: string[];
+      log?: string | string[];
+      status: ReleaseAccountStatus["status"];
+      account: string;
+      addHour?: boolean;
+    }) => {
+      appendLog(logs, log, addHour);
+      setStatuses((prev) => ({
+        ...prev,
+        [account]: { account, status, logs: [...logs] },
+      }));
+    },
+    [],
+  );
 
   // Função genérica para executar o fluxo de uma account
-  const execAccount = async (account: string) => {
-    setStatuses((prev) => ({
-      ...prev,
-      [account]: { account, status: "pending", logs: [] },
-    }));
-    const logs: string[] = ["Iniciando..."];
-    let status: ReleaseAccountStatus["status"] = "in_progress";
-    setStatuses((prev) => ({
-      ...prev,
-      [account]: { account, status, logs },
-    }));
 
-    if (stopped.current) {
-      handleStop({
-        account,
-        logs,
-      });
+  const execAccount = useCallback(
+    async (account: string) => {
+      setStatuses((prev) => ({
+        ...prev,
+        [account]: { account, status: "pending", logs: [] },
+      }));
+      const logs: string[] = ["Iniciando..."];
+      let status: ReleaseAccountStatus["status"] = "in_progress";
+      setStatuses((prev) => ({
+        ...prev,
+        [account]: { account, status, logs },
+      }));
 
-      return;
-    }
+      if (stopped.current) return handleStop({ account, logs });
 
-    // 1. Switch para a conta
-    handleLogs({
-      logs: logs,
-      log: "Iniciado switch de conta",
-      status,
-      account,
-      addHour: true,
-    });
-    const switchRes = await window.electronAPI?.switchAccount({ account });
-    handleLogs({
-      logs: logs,
-      log: switchRes?.log || "",
-      status,
-      account,
-    });
-    if (!switchRes?.success) {
-      status = "error";
+      // 1. Switch para a conta
       handleLogs({
-        logs: logs,
+        logs,
+        log: "Iniciado switch de conta",
         status,
         account,
+        addHour: true,
       });
-      toast({
-        title: `Erro ao trocar para a conta ${account}`,
-        description: switchRes?.log,
-        variant: "destructive",
-      });
-      return false;
-    }
+      const switchRes = await window.electronAPI?.switchAccount({ account });
+      handleLogs({ logs, log: switchRes?.log || "", status, account });
+      if (!switchRes?.success) {
+        status = "error";
+        handleLogs({ logs, status, account });
+        toast({
+          title: `Erro ao trocar para a conta ${account}`,
+          description: switchRes?.log,
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (stopped.current) return handleStop({ account, logs });
 
-    if (stopped.current) {
-      handleStop({
-        account,
+      // 2. Cria workspace
+      handleLogs({
         logs,
+        log: "Iniciado criação de workspace",
+        status,
+        account,
+        addHour: true,
       });
+      const wsRes = await window.electronAPI?.createWorkspace({
+        workspace: workspace.trim(),
+        typeWorkspace,
+        forceMaster,
+      });
+      handleLogs({ logs, log: wsRes?.log || "", status, account });
+      if (!wsRes?.success) {
+        status = "error";
+        handleLogs({ logs, status, account });
+        toast({
+          title: `Erro ao criar workspace na conta ${account}`,
+          description: wsRes?.log,
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (stopped.current) return handleStop({ account, logs });
 
-      return;
-    }
+      // 3. Desinstala apps
+      if (appsToUninstall.length > 0) {
+        handleLogs({
+          logs,
+          log: "Iniciado processo de desinstalação de apps",
+          status,
+          account,
+          addHour: true,
+        });
+        const uninstallRes = await window.electronAPI?.uninstallApps({
+          workspace: workspace.trim(),
+          appsToUninstall,
+          forceInstallation,
+          forceMaster,
+        });
+        handleLogs({ logs, log: uninstallRes?.logs || "", status, account });
+        if (!uninstallRes?.success) {
+          status = "error";
+          handleLogs({ logs, status, account });
+          toast({
+            title: `Erro ao desinstalar apps na conta ${account}`,
+            description:
+              uninstallRes?.logs?.find((l: string) => l.includes("FALHOU")) ||
+              "Erro desconhecido",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+      if (stopped.current) return handleStop({ account, logs });
 
-    // 2. Cria workspace
-    handleLogs({
-      logs: logs,
-      log: "Iniciado criação de workspace",
-      status,
-      account,
-      addHour: true,
-    });
-    const wsRes = await window.electronAPI?.createWorkspace({
-      workspace: workspace.trim(),
+      // 4. Instala apps
+      if (appsToInstall.length > 0) {
+        handleLogs({
+          logs,
+          log: "Iniciado processo de instalação de apps",
+          status,
+          account,
+          addHour: true,
+        });
+        const installRes = await window.electronAPI?.installApps({
+          workspace: workspace.trim(),
+          appsToInstall,
+          forceInstallation,
+          forceMaster,
+        });
+        handleLogs({ logs, log: installRes?.logs || "", status, account });
+        if (!installRes?.success) {
+          status = "error";
+          handleLogs({ logs, status, account });
+          toast({
+            title: `Erro ao instalar apps na conta ${account}`,
+            description:
+              installRes?.logs?.find((l: string) => l.includes("FALHOU")) ||
+              "Erro desconhecido",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+
+      handleLogs({
+        logs,
+        log: "Processo concluído.",
+        status: "done",
+        account,
+        addHour: true,
+      });
+      return true;
+    },
+    [
+      handleLogs,
+      handleStop,
+      workspace,
       typeWorkspace,
-    });
-    handleLogs({
-      logs: logs,
-      log: wsRes?.log || "",
-      status,
-      account,
-    });
-    if (!wsRes?.success) {
-      status = "error";
-      handleLogs({
-        logs: logs,
-        status,
-        account,
-      });
-      toast({
-        title: `Erro ao criar workspace na conta ${account}`,
-        description: wsRes?.log,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (stopped.current) {
-      handleStop({
-        account,
-        logs,
-      });
-
-      return;
-    }
-
-    // 3. Desinstala apps
-    if (appsToUninstall.length > 0) {
-      handleLogs({
-        logs: logs,
-        log: "Iniciado processo de desinstalação de apps",
-        status,
-        account,
-        addHour: true,
-      });
-      const uninstallRes = await window.electronAPI?.uninstallApps({
-        workspace: workspace.trim(),
-        appsToUninstall,
-        forceInstallation,
-        forceMaster,
-      });
-      handleLogs({
-        logs: logs,
-        log: uninstallRes?.logs || "",
-        status,
-        account,
-      });
-      if (!uninstallRes?.success) {
-        status = "error";
-        handleLogs({
-          logs: logs,
-          status,
-          account,
-        });
-        toast({
-          title: `Erro ao desinstalar apps na conta ${account}`,
-          description:
-            uninstallRes?.logs?.find((l) => l.includes("FALHOU")) ||
-            "Erro desconhecido",
-          variant: "destructive",
-        });
-        return false;
-      }
-    }
-
-    if (stopped.current) {
-      handleStop({
-        account,
-        logs,
-      });
-
-      return;
-    }
-
-    // 4. Instala apps
-    if (appsToInstall.length > 0) {
-      handleLogs({
-        logs: logs,
-        log: "Iniciado processo de instalação de apps",
-        status,
-        account,
-        addHour: true,
-      });
-
-      const installRes = await window.electronAPI?.installApps({
-        workspace: workspace.trim(),
-        appsToInstall,
-        forceInstallation,
-        forceMaster,
-      });
-      handleLogs({
-        logs: logs,
-        log: installRes?.logs || "",
-        status,
-        account,
-      });
-      if (!installRes?.success) {
-        status = "error";
-        handleLogs({
-          logs: logs,
-          status,
-          account,
-        });
-        toast({
-          title: `Erro ao instalar apps na conta ${account}`,
-          description:
-            installRes?.logs?.find((l) => l.includes("FALHOU")) ||
-            "Erro desconhecido",
-          variant: "destructive",
-        });
-        return false;
-      }
-    }
-
-    handleLogs({
-      logs: logs,
-      log: "Processo concluído.",
-      status: "done",
-      account,
-      addHour: true,
-    });
-    return true;
-  };
+      appsToUninstall,
+      appsToInstall,
+      forceInstallation,
+      forceMaster,
+      toast,
+    ],
+  );
 
   // Executa todas as accounts
-  const handleRun = async () => {
+
+  const handleRun = useCallback(async () => {
     if (!accounts.length || !workspace.trim()) return;
     setLoading(true);
     stopped.current = false;
-
-    const initial: Record<string, ReleaseAccountStatus> = {};
-    accounts.forEach(
-      (a) => (initial[a] = { account: a, status: "pending", logs: [] }),
+    setStatuses(
+      Object.fromEntries(
+        accounts.map((a) => [a, { account: a, status: "pending", logs: [] }]),
+      ),
     );
-    setStatuses(initial);
-
     for (const account of accounts) {
       if (stopped.current) break;
       await execAccount(account);
     }
-
     setLoading(false);
-  };
+  }, [accounts, workspace, execAccount]);
 
   // Retry para uma account específica
-  const handleRetryAccount = async (account: string) => {
-    setLoading(true);
-    stopped.current = false;
-    await execAccount(account);
-    setLoading(false);
-  };
+
+  const handleRetryAccount = useCallback(
+    async (account: string) => {
+      setLoading(true);
+      stopped.current = false;
+      await execAccount(account);
+      setLoading(false);
+    },
+    [execAccount],
+  );
 
   return (
     <div className="space-y-6">

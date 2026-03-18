@@ -27,16 +27,26 @@ function getMessage(message) {
  */
 async function retryFunction(fn, retries = 3, delayMs = 0) {
   let lastError;
+  let isNotFoundError = false;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await fn();
     } catch (err) {
+      const msg = getMessage(err)?.toLowerCase() || "";
+      isNotFoundError =
+        !msg.includes("404: not found") && !msg.includes("404: não encontrado");
+
+      if (isNotFoundError) break;
+
       lastError = err;
       if (attempt < retries && delayMs > 0) {
         await new Promise((res) => setTimeout(res, delayMs));
       }
     }
   }
+
+  if (isNotFoundError) return;
+
   throw lastError;
 }
 

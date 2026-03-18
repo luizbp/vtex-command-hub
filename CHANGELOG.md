@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.0] 2026-03-18
+
 ### Added
 
 - Add a label instructing users to enter “{vendor}.{app}” and a regular expression to validate the input before adding it

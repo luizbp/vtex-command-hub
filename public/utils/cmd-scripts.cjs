@@ -10,7 +10,6 @@ const execPromise = util.promisify(exec);
  * @returns {Promise<string>} - Saída do comando.
  */
 async function runVtexCommand(command) {
-  console.log("TCL: runVtexCommand -> command", command);
   try {
     const { stdout } = await execPromise(command);
     return stdout;
@@ -27,9 +26,6 @@ async function runVtexCommand(command) {
  * @returns {Promise<Object[]>}
  */
 async function versionChecker({ account, apps }) {
-  console.log("TCL: versionChecker -> account", account);
-  console.log("TCL: versionChecker -> apps", apps);
-
   const results = [];
   try {
     const stdout = await runVtexCommand(`vtex switch ${account} && vtex ls`);
@@ -54,7 +50,6 @@ async function versionChecker({ account, apps }) {
  * @returns {Promise<Object>}
  */
 async function updateAccount({ account }) {
-  console.log("TCL: updateAccount -> account", account);
   try {
     await runVtexCommand(`vtex switch ${account} && yes | vtex update`);
     return {
@@ -74,18 +69,11 @@ async function updateAccount({ account }) {
  * @returns {Promise<boolean>}
  */
 async function checkMasterRule(forceMaster, workspace) {
-  console.log("TCL: checkMasterRule -> forceMaster", forceMaster);
-  console.log("TCL: checkMasterRule -> workspace", workspace);
   if (forceMaster) return false;
   if (workspace.toLowerCase() === "master") return true;
   try {
     const whoamiOut = await runVtexCommand("vtex whoami");
-    console.log("TCL: checkMasterRule -> whoamiOut", whoamiOut);
     const workspaceStatusOut = await runVtexCommand("vtex workspace status");
-    console.log(
-      "TCL: checkMasterRule -> workspaceStatusOut",
-      workspaceStatusOut,
-    );
     return (
       workspaceStatusOut.toLowerCase().includes("master") ||
       whoamiOut.toLowerCase().includes("master")
@@ -136,9 +124,6 @@ async function switchAccount({ account }) {
  * @returns {Promise<Object>}
  */
 async function createWorkspace({ workspace, typeWorkspace, forceMaster }) {
-  console.log("TCL: createWorkspace -> forceMaster", forceMaster);
-  console.log("TCL: createWorkspace -> typeWorkspace", typeWorkspace);
-  console.log("TCL: createWorkspace -> workspace", workspace);
   if (!forceMaster && workspace.toLowerCase() === "master") {
     return {
       success: false,
@@ -150,7 +135,6 @@ async function createWorkspace({ workspace, typeWorkspace, forceMaster }) {
   const isProduction =
     typeWorkspace === "production" && workspace.toLowerCase() !== "master";
   const command = `echo yes | vtex use ${workspace}${isProduction ? " --production" : ""}`;
-  console.log("TCL: createWorkspace -> isProduction", isProduction);
   try {
     await runVtexCommand(command);
     return {
@@ -184,10 +168,6 @@ async function uninstallApps({
   forceInstallation = true,
   forceMaster = false,
 }) {
-  console.log("TCL: uninstallApps -> workspace", workspace);
-  console.log("TCL: uninstallApps -> appsToUninstall", appsToUninstall);
-  console.log("TCL: uninstallApps -> forceInstallation", forceInstallation);
-  console.log("TCL: uninstallApps -> forceMaster", forceMaster);
   const logs = [];
   if (await checkMasterRule(forceMaster, workspace)) {
     logs.push(
@@ -242,10 +222,6 @@ async function installApps({
   forceInstallation = true,
   forceMaster = false,
 }) {
-  console.log("TCL: installApps -> workspace", workspace);
-  console.log("TCL: installApps -> appsToInstall", appsToInstall);
-  console.log("TCL: installApps -> forceInstallation", forceInstallation);
-  console.log("TCL: installApps -> forceMaster", forceMaster);
   const logs = [];
   if (await checkMasterRule(forceMaster, workspace)) {
     logs.push('ERRO: Proibido rodar na master. Ative "Rodar em produção".');

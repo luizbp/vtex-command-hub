@@ -10,6 +10,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { getVersionColor } from "@/lib/utils";
 import { forwardRef } from "react";
 
 interface LogData {
@@ -64,12 +65,24 @@ export const PastExecutionViewer = forwardRef<
               </TableCell>
               {log.data.accounts.map((account: string) => (
                 <TableCell key={account} className="whitespace-nowrap">
-                  {r.accountVersions[account] ? (
-                    <span className="font-mono text-sm">
-                      {r.accountVersions[account]}
-                    </span>
-                  ) : (
+                  {r.accountVersions[account] === "Error" ? (
+                    <Badge variant="destructive">Error</Badge>
+                  ) : !r.accountVersions[account] ||
+                    r.accountVersions[account] === "Não instalado" ? (
                     <Badge variant="secondary">Não instalado</Badge>
+                  ) : (
+                    <Badge
+                      style={{
+                        backgroundColor: getVersionColor(
+                          r.accountVersions[account],
+                        ),
+                        color: "#fff",
+                      }}
+                    >
+                      <span className="font-mono text-sm">
+                        {r.accountVersions[account]}
+                      </span>
+                    </Badge>
                   )}
                 </TableCell>
               ))}

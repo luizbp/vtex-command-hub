@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { FileDown, FileUp, LoaderCircle, Search } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { useToast } from "@/components/ui/use-toast";
+import { checkFormatAppName } from "@/lib/utils";
 
 export default function SettingsPage() {
   const { theme, toggle } = useTheme();
@@ -22,6 +23,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<string[]>([]);
   const [apps, setApps] = useState<string[]>([]);
+  const [checkingUpdate, setCheckingUpdates] = useState(false);
 
   const getSettingsLocalStorage = useCallback(() => {
     const settings = getSettings();
@@ -127,6 +129,22 @@ export default function SettingsPage() {
           <FileUp />
           Exportar Configurações
         </Button>
+        <Button
+          variant="outline"
+          disabled={checkingUpdate}
+          onClick={() => {
+            setCheckingUpdates(true);
+            window.electronAPI?.checkForUpdates();
+
+            setTimeout(() => {
+              setCheckingUpdates(false);
+            }, 25000);
+          }}
+        >
+          <Search />
+          Buscar Atualizações{" "}
+          {checkingUpdate && <LoaderCircle className="animate-spin" />}
+        </Button>
       </div>
       <Card>
         <CardHeader>
@@ -161,8 +179,21 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <TagInput
               label="Apps"
+              description="O padrão deve ser {vendor}.{app}, ex: vtex.app-custom, vtex.app-another"
               values={apps}
-              onChange={setApps}
+              onChange={(value) => {
+                const isValid = checkFormatAppName(value);
+                if (!isValid) {
+                  toast({
+                    title: "Formato inválido",
+                    description:
+                      "Cada app deve seguir o formato vendor.app, ex: vtex.app-custom",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setApps(value);
+              }}
               placeholder="Digite um app e pressione Enter. ex: vtex.app-custom"
             />
           </div>

@@ -1,4 +1,4 @@
-name: Release Windows App
+name: Release Windows App on Merge
 
 on:
   pull_request:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   build-and-release:
+    if: github.event.pull_request.merged == true
     runs-on: windows-latest
 
     steps:
@@ -36,11 +37,21 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
+      # Extrai a descrição do CHANGELOG.md baseada na versão atual
+      - name: Extract Release Notes
+        id: extract_release_notes
+        uses: f-beto/extract-release-notes-action@v2
+        with:
+          release_version: ${{ steps.get_version.outputs.VERSION }}
+          changelog_file: CHANGELOG.md
+
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.get_version.outputs.VERSION }}
           name: Release v${{ steps.get_version.outputs.VERSION }}
+          # Aqui ele insere a descrição extraída do seu changelog
+          body: ${{ steps.extract_release_notes.outputs.release_notes }}
           draft: false
           prerelease: false
           files: |
